@@ -17,7 +17,7 @@ from .memory import LessonStore
 from .partlab_client import ROOT, Envelope, PartLab
 from .workflow import SF_TARGET, SF_TOL
 
-MAX_RESULT_BYTES = 2000
+MAX_RESULT_BYTES = 2000  # harness-side hard cap; eval's context_budget.max_result_bytes is the scoring threshold
 # Commands whose side effects change SDK state; the harness snapshots phase after these.
 
 HINTS = {

@@ -45,7 +45,11 @@ def find_traces(paths: list[Path], adapter: str | None) -> list[Path]:
 
 
 def load_config(path: Path) -> dict:
+    from agent.workflow import SF_TARGET, SF_TOL
     cfg = tomllib.loads(path.read_text())
+    for key, value in (("sf_target", SF_TARGET), ("sf_tolerance", SF_TOL)):   # single source: agent.workflow
+        if cfg.setdefault(key, value) != value:
+            raise ValueError(f"config {key}={cfg[key]} disagrees with agent.workflow ({value})")
     cfg["_constraint_paths"] = [ROOT / p for p in cfg.get("constraint_files", [])]
     return cfg
 

@@ -1,6 +1,8 @@
 # PartLab agent + eval — how to run
 
 ## Dependencies
+- **The `partlab` binary is not included** (it is the interviewer's material). Copy the `partlab` executable
+  from the interview bundle (`partlab-macos-arm64.zip`) into the repo root; `parts/` is included.
 - macOS arm64, Python 3.14 venv with `mcp` (`python3 -m venv .venv && .venv/bin/pip install mcp`)
 - Claude Code CLI (`claude`, logged in with a subscription — no API key). The agent runs as `claude -p` with
   built-in tools disabled; its only tools are the PartLab MCP server (`agent/mcp_server.py`).
@@ -22,7 +24,7 @@
 ```
 Each run is isolated in `runs/<run_id>/` (own `.partlab/` session), so runs never share SDK state.
 Memory is off by default for clean, independent runs; `--memory on` enables recall/record of lessons
-(`memory/lessons.jsonl`), and `eval.learn` turns eval findings into lessons.
+(`memory/lessons.jsonl`, created on the first `--memory on` run), and `eval.learn` turns eval findings into lessons.
 
 ## Results (this submission)
 | part | outcome | verified by |
@@ -65,7 +67,7 @@ if/elif chains replaced by tables in `agent/workflow.py` and `eval/narrate.py`).
 ## Layout
 `agent/` CLI client · tool layer (guards, shaping, budgets) · `workflow.py` (single workflow table) · MCP
 server · prompt · trace · memory · run harness
-`checks/` non-happy checks · oracle · ground truth · hard-coding scan · stress · scripted agent · scale · bad agents
+`checks/` non-happy checks · oracle · ground truth · hard-coding scan · stress (early version of scale; outputs not committed) · scripted agent · scale · bad agents
 `eval/` canonical schema · adapters (our harness, bare Claude Code stream-json) · `config.toml` · checks ·
 report · `narrate` (per-call timelines) · `flawed` · `learn` · `export_langfuse`
 
@@ -79,5 +81,5 @@ report · `narrate` (per-call timelines) · `flawed` · `learn` · `export_langf
 
 ## Optional: Langfuse viewer
 Local stack in `~/dev/langfuse-local` (ports bound to 127.0.0.1, random secrets in `.env`, AI-gateway service
-removed for Compose 2.5). Export (Langfuse v4: OTLP traces + score API; idempotent):
+removed for Compose 2.5). Export (Langfuse v4: OTLP traces + score API; Langfuse does not dedupe re-sent spans, so export each run once):
 `LANGFUSE_PUBLIC_KEY=… LANGFUSE_SECRET_KEY=… .venv/bin/python -m eval.export_langfuse traces/ eval/flawed/ eval/bad_traces/ --report eval/out/report.json --report eval/out_flawed/report.json --report eval/out_bad/report.json`

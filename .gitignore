@@ -6,3 +6,5 @@ __pycache__/
 .DS_Store
 stress/parts_seed*/
 stress/
+partlab
+partlab.exe
