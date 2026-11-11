@@ -8,7 +8,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 
 from agent.constraints import Constraints
-from agent.tools import SENSIBLE_RANGE
+from agent.workflow import NEXT_PHASE, REQUIRES, SENSIBLE_RANGE
 
 from .schema import Run, Step
 
@@ -31,10 +31,6 @@ def check(name: str):
 
 
 # ---- replay: derive phase / params / load at every step, independent of what the harness recorded ----------
-REQUIRES = {"mesh": {"open", "meshed", "loaded", "solved"}, "apply_load": {"meshed", "loaded", "solved"},
-            "solve": {"loaded", "solved"}, "get_safety_factor": {"solved"}, "save_part": {"solved"}}
-NEXT_PHASE = {"open_part": "open", "revert_parameters": "open", "set_parameter": "open", "mesh": "meshed",
-              "apply_load": "loaded", "solve": "solved"}
 
 
 @dataclass

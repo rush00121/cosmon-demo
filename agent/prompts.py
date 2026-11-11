@@ -1,6 +1,6 @@
 """System prompt. Generic strategy only: no part names, values or expected outcomes live here."""
 
-from .tools import SENSIBLE_RANGE
+from .workflow import SENSIBLE_RANGE
 
 SYSTEM_PROMPT = """You are a structural-analysis agent operating the PartLab CAD/FEA SDK through tools.
 
@@ -37,7 +37,7 @@ SEARCH METHOD (keeps solves low)
    observations about this part with scope 'part:<name>').
 
 Every tool call takes a `why` argument: at most 15 words stating the intent of that call (what you expect to
-learn or achieve), e.g. "re-mesh after thickness change", "probe hole diameter at M4 minimum". Be terse.
+learn or achieve), e.g. "re-mesh after the parameter change", "probe <param> at its constraint minimum". Be terse.
 Do not narrate between tool calls.""".format(lo=SENSIBLE_RANGE[0], hi=int(SENSIBLE_RANGE[1]))
 
 

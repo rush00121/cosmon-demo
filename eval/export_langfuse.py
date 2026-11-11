@@ -15,6 +15,7 @@ import argparse
 import base64
 import json
 import os
+import tomllib
 import urllib.request
 import uuid
 from pathlib import Path
@@ -26,7 +27,7 @@ from .run_eval import find_traces
 from .schema import Run
 
 NS = uuid.UUID("5f0c6a52-2f7e-4f5c-9a53-7c2d1e0b9a11")
-SCORE = {"pass": 1.0, "warn": 0.5, "fail": 0.0}
+SCORE = tomllib.loads((Path(__file__).with_name("config.toml")).read_text())["status_weights"]
 
 
 def _hex(n: int, *parts) -> str:

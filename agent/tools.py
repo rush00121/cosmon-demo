@@ -15,13 +15,10 @@ from pathlib import Path
 from .constraints import Constraints
 from .memory import LessonStore
 from .partlab_client import ROOT, Envelope, PartLab
+from .workflow import MUTATING, SENSIBLE_RANGE, SF_TARGET, SF_TOL  # noqa: F401 (re-exported)
 
-SF_TARGET = 2.0
-SF_TOL = 1e-3
-SENSIBLE_RANGE = (0.25, 4.0)  # multiples of the original value when a parameter has no stated limit
 MAX_RESULT_BYTES = 2000
 # Commands whose side effects change SDK state; the harness snapshots phase after these.
-MUTATING = {"open_part", "mesh", "apply_load", "solve", "set_parameter", "revert_parameters", "save_part"}
 
 HINTS = {
     "StateError": "Follow the workflow open_part -> mesh -> apply_load -> solve. set_parameter resets to 'open'.",
@@ -109,7 +106,7 @@ SCHEMAS: dict[str, dict] = {
                           "old_value": {"type": ["number", "null"]},
                           "new_value": {"type": ["number", "null"]},
                           "tried": {"type": "array", "items": {"type": "string"},
-                                    "description": "One line per candidate tried, e.g. 'thickness_mm=4 -> SF 1.9'"},
+                                    "description": "One line per candidate tried, e.g. '<param>=<value> -> SF <x>'"},
                           "reason": {"type": "string"}},
                       "required": ["status", "baseline_sf", "final_sf", "reason"]},
 }
@@ -118,7 +115,7 @@ TERMINAL = {"report_result", "record_lessons"}
 # Every tool takes a short stated intent. It is recorded in the trace (engineers see *why* each call was made)
 # and stripped before dispatch, so it never reaches the CLI or changes behavior.
 WHY = {"type": "string", "maxLength": 120,
-       "description": "<=15 words: why you are making this call, e.g. 'probe thickness at max 5.0 to test feasibility'"}
+       "description": "<=15 words: why you are making this call, e.g. 'probe <param> at its constraint max to test feasibility'"}
 for _schema in SCHEMAS.values():
     _schema["properties"] = {"why": WHY, **_schema["properties"]}
     _schema["required"] = ["why", *_schema.get("required", [])]
@@ -168,9 +165,20 @@ class PartLabTools:
         if name not in {"open_part", "recall_lessons", "record_lessons", "report_result"} and not self.part:
             return ToolOutcome(err("NoPartOpen", "no part is open"), "harness")
         try:
-            return getattr(self, f"_t_{name}")(**args)
+            outcome = getattr(self, f"_t_{name}")(**args)
         except TypeError as e:  # bad/missing tool arguments from the model
             return ToolOutcome(err("InvalidArgumentError", str(e)), "harness")
+        return self._cap(outcome)
+
+    @staticmethod
+    def _cap(outcome: ToolOutcome) -> ToolOutcome:
+        """Generic context guard: no tool result may put more than MAX_RESULT_BYTES in front of the model."""
+        text = json.dumps(outcome.shaped, default=str)
+        if len(text) > MAX_RESULT_BYTES:
+            outcome.shaped = {"ok": outcome.shaped.get("ok"), "truncated": True, "bytes": len(text),
+                              "preview": text[: MAX_RESULT_BYTES // 2]}
+            outcome.events.append({"type": "result_truncated", "bytes": len(text)})
+        return outcome
 
     def _cli(self, *argv) -> tuple[Envelope, dict]:
         env = self.lab.run(*argv)

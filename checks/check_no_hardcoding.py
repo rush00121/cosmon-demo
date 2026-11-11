@@ -38,7 +38,9 @@ def observed_numbers() -> set[float]:
 
 
 def main() -> int:
-    parts = {json.loads(p.read_text())["name"] for p in DEFAULT_PARTS.glob("*.json")}
+    specs = [json.loads(p.read_text()) for p in DEFAULT_PARTS.glob("*.json")]
+    parts = {s["name"] for s in specs}
+    param_names = {k for s in specs for k in s.get("parameters", {})}
     numbers = observed_numbers()
     hits = []
     for d in SCAN:
@@ -48,11 +50,13 @@ def main() -> int:
             for n in literals(ast.parse(f.read_text())):
                 if isinstance(n.value, str) and any(p in n.value for p in parts):
                     hits.append(f"{f.relative_to(ROOT)}:{n.lineno} part name in literal: {n.value[:60]!r}")
+                elif d == "agent" and isinstance(n.value, str) and any(p in n.value for p in param_names):
+                    hits.append(f"{f.relative_to(ROOT)}:{n.lineno} parameter name in agent literal: {n.value[:60]!r}")
                 elif isinstance(n.value, float) and n.value in numbers:
                     hits.append(f"{f.relative_to(ROOT)}:{n.lineno} observed result value {n.value}")
     for h in hits:
         print("HARDCODED", h)
-    print(f"scanned {SCAN} against {len(parts)} part names and {len(numbers)} observed values: "
+    print(f"scanned {SCAN} against {len(parts)} part names, {len(param_names)} parameter names and {len(numbers)} observed values: "
           f"{'CLEAN' if not hits else f'{len(hits)} hit(s)'}")
     return 1 if hits else 0
 

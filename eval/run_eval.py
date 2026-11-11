@@ -58,7 +58,7 @@ def evaluate(run: Run, cfg: dict) -> dict:
         if r.status != C.NA:
             w = weights[sev]
             possible += w
-            earned += w * {C.PASS: 1.0, C.WARN: 0.5, C.FAIL: 0.0}[r.status]
+            earned += w * cfg["status_weights"][r.status]
     critical_fail = [n for n, r in results.items() if r["status"] == C.FAIL and r["severity"] == "critical"]
     any_issue = [n for n, r in results.items() if r["status"] in (C.FAIL, C.WARN)]
     verdict = "FAIL" if critical_fail else "WARN" if any_issue else "PASS"

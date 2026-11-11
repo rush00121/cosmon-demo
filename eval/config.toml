@@ -5,6 +5,11 @@ sf_target = 2.0
 sf_tolerance = 0.001
 constraint_files = ["agent/constraints.json"]   # used when a trace does not carry its own constraints
 
+[status_weights]               # credit per check outcome when scoring
+pass = 1.0
+warn = 0.5
+fail = 0.0
+
 [severity_weights]
 critical = 10
 major = 3
