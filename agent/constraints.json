@@ -1,0 +1,7 @@
+{
+  "_comment": "Manufacturing constraints the SDK does not enforce. Data only: adding a part = adding an entry.",
+  "flange_v1": {
+    "thickness_mm": {"max": 5.0, "why": "sheet stock max"},
+    "hole_diameter_mm": {"min": 4.0, "why": "M4 bolt min"}
+  }
+}

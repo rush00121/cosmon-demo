@@ -103,6 +103,24 @@ source: reflection|eval, created, uses, confirmations}`.
   process lessons (e.g. "verify by solve before report"). Dedup by normalized text; repeated → `confirmations++`.
 - *Prove it:* run A (memory off) vs run B (memory on) on the same part; eval shows fewer solves/errors or equal.
 
+## Supervision, genericity & non-happy paths (user requirement)
+- **Supervisor agent**: an independent reviewer subagent audits code + traces at each checkpoint (after slice 1,
+  after first real runs, before handoff) for cheating: part names/numbers in code, reading `parts/*.json`,
+  handbook use, unverified claims, guards that mask behavior. Findings reported to user verbatim, fixed, re-audited.
+- **No-hard-coding check** (`checks/check_no_hardcoding.py`): agent code (agent/, prompts) must not contain part names
+  or result numbers; only `constraints.json` (data) may name parts.
+- **Stress / genericity**: `checks/stress.py` runs the agent on (a) un-named parts housing_v1, bracket_v3_thick,
+  bracket_v1 (stale revision), (b) **synthetic parts** generated into a run-local `parts/` (perturbed loads/
+  geometry/material, renamed) with synthetic constraints → expected outcomes come only from the oracle re-solve.
+- **Fault injection** (`PARTLAB_FAULTS=mesh:1,solve:timeout,...` in the client): simulated MeshError, timeout,
+  garbage stdout → agent must recover or end with structured `failed` report; budget exhaustion → graceful `failed`.
+
+## Discovery results (done)
+- Flags precede positionals (Go `flag`): `apply-load --direction=-Z <face> <N>`, `mesh --element-size` (0,10],
+  `get-safety-factor --region all|critical`. bracket_v3: element size & region don't change SF; fillet has no effect;
+  thickness & hole diameter do. Unknown param / non-number / ≤0 → InvalidArgumentError. Invalid face →
+  InvalidArgumentError listing valid faces.
+
 ## Repo
 git repo rooted here; `.gitignore`: `runs/`, `.partlab/`, `.venv/`, `*.zip`. Commit per slice.
 
