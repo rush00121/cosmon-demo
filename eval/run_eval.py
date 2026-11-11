@@ -10,6 +10,7 @@ import argparse
 import json
 import tomllib
 from collections import defaultdict
+from concurrent.futures import ProcessPoolExecutor
 from pathlib import Path
 
 from agent.partlab_client import DEFAULT_PARTS, ROOT
@@ -17,6 +18,13 @@ from agent.partlab_client import DEFAULT_PARTS, ROOT
 from . import checks as C
 from .adapters import load
 from .schema import Run
+
+def _ground_truth_job(args) -> dict:
+    from agent.constraints import Constraints
+    from checks.ground_truth import ground_truth
+    part, parts_dir, srcs = args
+    return ground_truth(part, Path(parts_dir), Constraints(*map(Path, srcs)))
+
 
 TRACE_NAMES = {"partlab_harness": "harness.jsonl", "claude_stream": "llm.stream.jsonl"}
 
@@ -120,18 +128,18 @@ def main(argv=None) -> int:
     ap.add_argument("--config", type=Path, default=Path(__file__).with_name("config.toml"))
     ap.add_argument("--ground-truth", action="store_true", help="brute-force expected status per part (slow)")
     ap.add_argument("--out", type=Path, default=Path(__file__).parent / "out")
+    ap.add_argument("--jobs", type=int, default=1, help="parallel workers for --ground-truth")
     a = ap.parse_args(argv)
     cfg = load_config(a.config)
     runs = [load(p, a.adapter) for p in find_traces(a.paths, a.adapter)]
     if a.ground_truth:
-        from agent.constraints import Constraints
-        from checks.ground_truth import ground_truth
-        cfg["_ground_truth"] = {}
-        for run in runs:
-            if run.part and run.part not in cfg["_ground_truth"]:
-                parts = Path(run.meta.get("parts_dir") or DEFAULT_PARTS)
-                srcs = run.meta.get("constraint_sources") or cfg["_constraint_paths"]
-                cfg["_ground_truth"][run.part] = ground_truth(run.part, parts, Constraints(*map(Path, srcs)))
+        jobs = {}
+        for run in runs:   # one brute-force sweep per distinct part, run in parallel
+            if run.part and run.part not in jobs:
+                srcs = run.meta.get("constraint_sources") or [str(p) for p in cfg["_constraint_paths"]]
+                jobs[run.part] = (run.part, str(run.meta.get("parts_dir") or DEFAULT_PARTS), srcs)
+        with ProcessPoolExecutor(max(1, a.jobs)) as pool:
+            cfg["_ground_truth"] = dict(zip(jobs, pool.map(_ground_truth_job, jobs.values())))
     rows = [evaluate(r, cfg) for r in runs]
     agg = aggregate(rows)
     a.out.mkdir(parents=True, exist_ok=True)

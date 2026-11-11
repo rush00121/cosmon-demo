@@ -42,6 +42,7 @@ def parse_args(argv=None):
     p.add_argument("--max-calls", type=int, default=60)
     p.add_argument("--timeout-s", type=int, default=600)
     p.add_argument("--tag", default="")
+    p.add_argument("--trace-root", type=Path, default=ROOT / "traces")
     a = p.parse_args(argv)
     a.constraints = [c.resolve() for c in (a.constraints or [DEFAULT_CONSTRAINTS])]
     return a
@@ -49,7 +50,7 @@ def parse_args(argv=None):
 
 def run(a) -> dict:
     run_id = "-".join(x for x in (a.part, time.strftime("%Y%m%dT%H%M%S"), f"mem{a.memory}", a.tag) if x)
-    trace_dir = ROOT / "traces" / run_id
+    trace_dir = a.trace_root / run_id
     workdir = make_workdir(ROOT / "runs" / run_id, a.parts_dir)
     harness_path, stream_path = trace_dir / "harness.jsonl", trace_dir / "llm.stream.jsonl"
     saved = a.outputs_dir / f"{a.part}.json"
@@ -105,7 +106,7 @@ def run(a) -> dict:
                       num_turns=result_line.get("num_turns"), usage=result_line.get("usage"),
                       total_cost_usd=result_line.get("total_cost_usd"), final_text=result_line.get("result"))
     tracer.close()
-    return {"run_id": run_id, "trace": str(harness_path.relative_to(ROOT)), "exit_code": exit_code,
+    return {"run_id": run_id, "trace": str(harness_path.relative_to(ROOT) if harness_path.is_relative_to(ROOT) else harness_path), "exit_code": exit_code,
             "oracle": oracle, "final_text": end["final_text"]}
 
 
