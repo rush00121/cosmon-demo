@@ -30,7 +30,8 @@ def build() -> tuple[PartLabTools, Tracer]:
                          outputs_dir=Path(env["PARTLAB_OUTPUTS"]), lessons=lessons,
                          guards=env.get("PARTLAB_GUARDS", "1") == "1",
                          max_solves=int(env.get("PARTLAB_MAX_SOLVES", 12)),
-                         max_calls=int(env.get("PARTLAB_MAX_CALLS", 60)), run_id=run_id)
+                         max_calls=int(env.get("PARTLAB_MAX_CALLS", 60)), run_id=run_id,
+                         assigned_part=env.get("PARTLAB_PART"))
     return tools, tracer
 
 

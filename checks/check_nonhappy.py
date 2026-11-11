@@ -56,21 +56,58 @@ def check_usage_error(tmp):
     return f"bad CLI usage becomes a structured envelope ({env.error_type}, {env2.error_type}), never a crash"
 
 
+def tiny_change(t: PartLabTools, name: str) -> float:
+    """A 1% nudge that stays inside any constraint (so only the rule under test can fire)."""
+    for v in (t.base_params[name] * 1.01, t.base_params[name] * 0.99):
+        if not t.constraints.check(t.part, name, v):
+            return v
+    raise AssertionError(f"no in-constraint nudge for {name}")
+
+
 def check_save_requires_pass(tmp):
     t = fresh(tmp, "save")
     t.call("open_part", {"name": ANY_PART})
     solve_baseline(t)
+    if t.solves[-1]["sf"] >= 2.0:
+        return f"SKIPPED: {ANY_PART} already passes; pick a failing part for this check"
+    name = next(iter(t.base_params))
+    t.call("set_parameter", {"name": name, "value": tiny_change(t, name)})
+    solve_baseline(t)
+    assert t.solves[-1]["sf"] < 2.0, "nudge unexpectedly fixed the part"
     out = t.call("save_part").shaped
-    assert out["error_type"] == "SaveRejected" and not (t.outputs_dir / f"{ANY_PART}.json").exists(), out
-    return f"save refused without a verified change ({out['error']})"
+    assert out["error_type"] == "SaveRejected" and "SF" in out["error"], out
+    assert not (t.outputs_dir / f"{ANY_PART}.json").exists()
+    return f"single-param change with SF still < 2 cannot be saved ({out['error']})"
+
+
+def check_wrong_part(tmp):
+    t = fresh(tmp, "wrongpart", assigned_part=ANY_PART)
+    out = t.call("open_part", {"name": ANY_PART + "_other"}).shaped
+    assert out["error_type"] == "WrongPart" and t.part is None, out
+    return "opening a different part than assigned is refused (no part-swap 'fixes')"
+
+
+def check_non_default_load(tmp):
+    t = fresh(tmp, "load")
+    t.call("open_part", {"name": ANY_PART})
+    d = t.default_load
+    t.call("mesh")
+    t.call("apply_load", {"face_id": d["face_id"], "force_N": d["force_N"] / 10, "direction": d["direction"]})
+    t.call("solve")
+    sf = t.solves[-1]["sf"]
+    rep = t.check_report({"status": "no_change_needed", "baseline_sf": sf, "final_sf": sf, "reason": "x"})
+    assert any("baseline" in p for p in rep), rep
+    return f"a solve under a reduced load (SF {sf}) is not accepted as the baseline"
 
 
 def check_single_parameter(tmp):
     t = fresh(tmp, "single")
     t.call("open_part", {"name": ANY_PART})
+    if len(t.base_params) < 2:
+        return "SKIPPED: part has fewer than two parameters"
     p1, p2 = list(t.base_params)[:2]
-    assert t.call("set_parameter", {"name": p1, "value": t.base_params[p1] * 1.1}).shaped["ok"]
-    out = t.call("set_parameter", {"name": p2, "value": t.base_params[p2] * 1.1}).shaped
+    assert t.call("set_parameter", {"name": p1, "value": tiny_change(t, p1)}).shaped["ok"]
+    out = t.call("set_parameter", {"name": p2, "value": tiny_change(t, p2)}).shaped
     reverted = t.call("revert_parameters").shaped
     sdk = t.lab.run("get-active-part").result["parameter_overrides"]
     assert out["error_type"] == "MultiParameterChange" and reverted["ok"] and not sdk, (out, sdk)
@@ -113,7 +150,8 @@ def check_budget(tmp):
 
 
 CHECKS = [check_constraint_guard, check_invalid_transition, check_usage_error, check_save_requires_pass,
-          check_single_parameter, check_report_contradiction, check_injected_faults, check_budget]
+          check_wrong_part, check_non_default_load, check_single_parameter, check_report_contradiction,
+          check_injected_faults, check_budget]
 
 
 def main() -> int:

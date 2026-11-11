@@ -16,7 +16,8 @@ class Tracer:
         self.path = Path(path)
         self.path.parent.mkdir(parents=True, exist_ok=True)
         self.run_id = run_id
-        self.seq = 0
+        # run.py and the MCP server append to the same file in sequence; continue its numbering.
+        self.seq = sum(1 for _ in self.path.open()) if self.path.exists() else 0
         self._f = self.path.open("a")
 
     def emit(self, type_: str, **fields) -> dict:

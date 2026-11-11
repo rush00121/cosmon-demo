@@ -35,6 +35,7 @@ HINTS = {
     "ReportRejected": "Your report contradicts what the tools observed. Fix the fields to match observed values.",
     "BudgetExceeded": "Budget exhausted. Call report_result now with status 'failed' (or what you verified).",
     "NoPartOpen": "Call open_part first.",
+    "WrongPart": "Analyse only the part you were asked about; fixes must be parameter changes on that part.",
 }
 
 
@@ -117,19 +118,31 @@ TERMINAL = {"report_result", "record_lessons"}
 class PartLabTools:
     def __init__(self, lab: PartLab, constraints: Constraints, outputs_dir: Path = ROOT / "outputs",
                  lessons: LessonStore | None = None, guards: bool = True,
-                 max_solves: int = 12, max_calls: int = 60, run_id: str = "adhoc"):
+                 max_solves: int = 12, max_calls: int = 60, run_id: str = "adhoc",
+                 assigned_part: str | None = None):
         self.lab, self.constraints, self.outputs_dir = lab, constraints, Path(outputs_dir)
         self.lessons, self.guards, self.run_id = lessons, guards, run_id
         self.max_solves, self.max_calls = max_solves, max_calls
+        self.assigned_part = assigned_part
         self.part: str | None = None
+        self.calls = 0
+        self.solve_attempts = 0
+        self.report: dict | None = None
+        self._reset_part_state()
+
+    def _reset_part_state(self) -> None:
         self.default_load: dict | None = None
         self.base_params: dict = {}
         self.params: dict = {}
         self.solves: list[dict] = []        # every successful solve summary, in order
         self.fresh_solve = False            # True iff a solve succeeded and nothing changed since
         self.saved_path: str | None = None
-        self.calls = 0
-        self.report: dict | None = None
+        self.saved_solve: dict | None = None  # the solve that was current when save_part succeeded
+
+    def load_is_default(self, load: dict | None) -> bool:
+        d, l = self.default_load or {}, load or {}
+        return (l.get("face_id"), l.get("force_N"), l.get("direction")) == \
+               (d.get("face_id"), d.get("force_N"), d.get("direction"))
 
     # ---- dispatch -------------------------------------------------------------------------------
     def call(self, name: str, args: dict | None = None) -> ToolOutcome:
@@ -138,9 +151,11 @@ class PartLabTools:
             return ToolOutcome(err("InvalidArgumentError", f"unknown tool {name}"), "harness")
         if name not in TERMINAL:
             self.calls += 1
-            if self.calls > self.max_calls or (name == "solve" and len(self.solves) >= self.max_solves):
+            if self.calls > self.max_calls or (name == "solve" and self.solve_attempts >= self.max_solves):
                 return ToolOutcome(err("BudgetExceeded", f"limit reached: {self.calls} calls, "
-                                                         f"{len(self.solves)} solves"), "harness")
+                                                         f"{self.solve_attempts} solve attempts"), "harness")
+            if name == "solve":
+                self.solve_attempts += 1
         if name not in {"open_part", "recall_lessons", "record_lessons", "report_result"} and not self.part:
             return ToolOutcome(err("NoPartOpen", "no part is open"), "harness")
         try:
@@ -165,8 +180,14 @@ class PartLabTools:
 
     # ---- SDK tools ------------------------------------------------------------------------------
     def _t_open_part(self, name: str) -> ToolOutcome:
+        if self.guards and self.assigned_part and name != self.assigned_part:
+            detail = f"assigned part is {self.assigned_part}, not {name}"
+            return ToolOutcome(err("WrongPart", detail), "guard",
+                               events=[{"type": "guard_reject", "rule": "assigned_part", "detail": detail}])
         env, shaped = self._cli("open-part", name)
         if env.ok:
+            if name != self.part:
+                self._reset_part_state()
             self.part, self.default_load = name, env.result.get("default_load")
             penv = self.lab.run("get-parameters")
             self.base_params = dict(penv.result) if penv.ok else {}
@@ -248,6 +269,8 @@ class PartLabTools:
             problems.append("no fresh converged solve since the last change")
         elif last["sf"] is None or last["sf"] < SF_TARGET:
             problems.append(f"last SF {last['sf']} < {SF_TARGET}")
+        if last and not self.load_is_default(last["load"]):
+            problems.append(f"last solve used load {last['load']}, not the default {self.default_load}")
         if len(changed) != 1:
             problems.append(f"{len(changed)} parameters differ from original (need exactly 1)")
         problems += [v for k, val in changed.items() if (v := self.constraints.check(self.part, k, val))]
@@ -259,7 +282,7 @@ class PartLabTools:
         path = (self.outputs_dir / f"{self.part}.json").resolve()
         env, shaped = self._cli("save-part", path)
         if env.ok:
-            self.saved_path = str(path)
+            self.saved_path, self.saved_solve = str(path), last
             shaped = ok({"saved": f"outputs/{self.part}.json"})
         return ToolOutcome(shaped, "cli", env)
 
@@ -281,12 +304,13 @@ class PartLabTools:
         report = dict(status=status, baseline_sf=baseline_sf, final_sf=final_sf, parameter=parameter,
                       old_value=old_value, new_value=new_value, tried=tried or [], reason=reason)
         problems = self.check_report(report)
+        events = [{"type": "report_check", "problems": problems, "report": report}]
         if problems and self.guards:
             detail = "; ".join(problems)
             return ToolOutcome(err("ReportRejected", detail), "guard",
-                               events=[{"type": "self_correction_requested", "detail": detail}])
+                               events=events + [{"type": "self_correction_requested", "detail": detail}])
         self.report = report
-        return ToolOutcome(ok({"accepted": True}), "harness")
+        return ToolOutcome(ok({"accepted": True}), "harness", events=events)
 
     def check_report(self, r: dict) -> list[str]:
         """Claims vs observations. Used live (self-correction) and by the eval (as ground truth)."""
@@ -298,18 +322,23 @@ class PartLabTools:
             return ["no successful solve was observed"]
         if not close(r["baseline_sf"], sfs[0]):
             p.append(f"baseline_sf {r['baseline_sf']} != first observed solve {sfs[0]}")
+        first = self.solves[0]
+        if first["params"] != self.base_params or not self.load_is_default(first["load"]):
+            p.append("first solve was not the baseline (original parameters + default load)")
         if r["status"] == "no_change_needed":
             if sfs[0] < SF_TARGET:
                 p.append(f"baseline SF {sfs[0]} < {SF_TARGET}, a change is needed")
             if self.saved_path:
                 p.append("part was saved but status says no change")
         if r["status"] == "fixed":
-            if not close(r["final_sf"], sfs[-1]):
-                p.append(f"final_sf {r['final_sf']} != last observed solve {sfs[-1]}")
+            verified = self.saved_solve or self.solves[-1]   # the saved file reflects the solve at save time
+            if not close(r["final_sf"], verified["sf"]):
+                p.append(f"final_sf {r['final_sf']} != SF of the saved/verified solve {verified['sf']}")
             if not self.saved_path:
                 p.append("status fixed but save_part was never successful")
-            changed = self.solves[-1]["params"]
-            diff = {k: v for k, v in changed.items() if self.base_params.get(k) != v}
+            if not self.load_is_default(verified["load"]):
+                p.append("verified solve did not use the default load")
+            diff = {k: v for k, v in verified["params"].items() if self.base_params.get(k) != v}
             if r.get("parameter") not in diff or not close(r.get("new_value"), diff.get(r.get("parameter"))):
                 p.append(f"parameter/new_value do not match the solved change {diff}")
         if r["status"] == "no_fix_possible" and self.saved_path:
