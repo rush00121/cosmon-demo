@@ -2,13 +2,13 @@
   "tier": "infra (scripted policy, no LLM)",
   "parts": 1000,
   "jobs": 6,
-  "agent_wall_s": 99.0,
-  "runs_per_min": 605.9,
+  "agent_wall_s": 87.3,
+  "runs_per_min": 687.1,
   "run_latency_s": {
-    "p50": 0.62,
-    "p95": 1.45,
-    "max": 3.2,
-    "mean": 0.58
+    "p50": 0.64,
+    "p95": 1.0,
+    "max": 1.76,
+    "mean": 0.51
   },
   "statuses": {
     "fixed": 472,
@@ -18,8 +18,8 @@
   "crashes": [],
   "total_tool_calls": 27724,
   "oracle_failures": 0,
-  "trace_bytes": 29542814,
-  "eval_wall_s": 159.1,
+  "trace_bytes": 29540992,
+  "eval_wall_s": 173.4,
   "verdicts": {
     "PASS": 528,
     "WARN": 472,

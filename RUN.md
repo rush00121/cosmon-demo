@@ -51,7 +51,7 @@ constraint-violating or unverified change cannot reach the SDK or `outputs/`; a 
 **Scale** (`results/`):
 | tier | runs | concurrency | throughput | latency p50/p95 | outcome |
 |---|---|---|---|---|---|
-| infra: scripted policy, full tools/guards/trace/oracle/eval | 1000 synthetic parts | 6 procs | 606 runs/min | 0.6 / 1.5 s | 0 crashes, 0 oracle failures, 1000/1000 statuses = ground truth; eval of 1000 traces (30 MB) incl. ground truth: 159 s |
+| infra: scripted policy, full tools/guards/trace/oracle/eval | 1000 synthetic parts | 6 procs | 687 runs/min | 0.6 / 1.0 s | 0 crashes, 0 oracle failures, 1000/1000 statuses = ground truth; eval of 1000 traces (30 MB) incl. ground truth: 173 s |
 | real `claude -p` agents | 30 synthetic parts | 10 | 27 runs/min | 20 / 30 s | 30/30 eval PASS, 0 rate-limited, $1.00 API-equiv, 5h window 44%→53% |
 
 What scales: harness, traces and eval are embarrassingly parallel (isolated workdir per run, append-only JSONL,
