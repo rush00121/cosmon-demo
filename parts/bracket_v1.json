@@ -1,0 +1,30 @@
+{
+  "name": "bracket_v1",
+  "revision": 1,
+  "is_latest": false,
+  "supersedes": [],
+  "material": {
+    "name": "AISI 1018 Steel",
+    "yield_MPa": 200.0
+  },
+  "parameters": {
+    "thickness_mm": 2.5,
+    "hole_diameter_mm": 12.0,
+    "fillet_radius_mm": 1.0
+  },
+  "features": [
+    {"id": "face_top",       "type": "face",   "area_mm2": 1000.0},
+    {"id": "face_mounting",  "type": "face",   "area_mm2": 600.0,  "role": "mounting"},
+    {"id": "hole_1",         "type": "hole",   "diameter_mm": 12.0},
+    {"id": "hole_2",         "type": "hole",   "diameter_mm": 12.0}
+  ],
+  "valid_load_faces": ["face_mounting"],
+  "default_load": {
+    "face_id": "face_mounting",
+    "force_N": 3000.0,
+    "direction": "-Z"
+  },
+  "physics": {
+    "K_stress": 140.0
+  }
+}

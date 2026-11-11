@@ -1,0 +1,31 @@
+{
+  "name": "bracket_v3",
+  "revision": 3,
+  "is_latest": true,
+  "supersedes": ["bracket_v1", "bracket_v2"],
+  "material": {
+    "name": "AISI 1045 Steel",
+    "yield_MPa": 250.0
+  },
+  "parameters": {
+    "thickness_mm": 3.0,
+    "hole_diameter_mm": 8.0,
+    "fillet_radius_mm": 2.0
+  },
+  "features": [
+    {"id": "face_top",       "type": "face",   "area_mm2": 1200.0},
+    {"id": "face_mounting",  "type": "face",   "area_mm2": 800.0,  "role": "mounting"},
+    {"id": "hole_1",         "type": "hole",   "diameter_mm": 8.0},
+    {"id": "hole_2",         "type": "hole",   "diameter_mm": 8.0},
+    {"id": "fillet_1",       "type": "fillet", "radius_mm": 2.0}
+  ],
+  "valid_load_faces": ["face_top", "face_mounting"],
+  "default_load": {
+    "face_id": "face_mounting",
+    "force_N": 5000.0,
+    "direction": "-Z"
+  },
+  "physics": {
+    "K_stress": 140.0
+  }
+}

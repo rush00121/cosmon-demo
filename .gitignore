@@ -1,0 +1,6 @@
+runs/
+.partlab/
+.venv/
+*.zip
+__pycache__/
+.DS_Store
