@@ -40,6 +40,24 @@ def check_constraint_guard(tmp):
     return f"{name}={bad} rejected before reaching the SDK (SDK overrides still {sdk})"
 
 
+def check_injected_constraints(tmp):
+    """Constraints come from outside: pattern keys, layered files, fixed/allowed rules all reach the guard."""
+    import json
+    base, extra = tmp / "c_base.json", tmp / "c_extra.json"
+    family = ANY_PART.split("_")[0] + "_*"
+    base.write_text(json.dumps({family: {"thickness_mm": {"max": 100, "why": "family rule"}}}))
+    extra.write_text(json.dumps({ANY_PART: {"thickness_mm": {"fixed": True, "why": "injected override"},
+                                            "hole_diameter_mm": {"allowed": [6.0, 8.0], "why": "tooling"}}}))
+    wd = make_workdir(tmp / "injected")
+    t = PartLabTools(PartLab(wd, faults={}), Constraints(base, extra), outputs_dir=wd / "outputs")
+    opened = t.call("open_part", {"name": ANY_PART}).shaped["result"]["manufacturing_constraints"]
+    fixed = t.call("set_parameter", {"name": "thickness_mm", "value": t.base_params["thickness_mm"] + 1}).shaped
+    allowed = t.call("set_parameter", {"name": "hole_diameter_mm", "value": 7.0}).shaped
+    assert fixed["error_type"] == allowed["error_type"] == "ConstraintViolation", (fixed, allowed)
+    assert any("fixed" in c for c in opened), opened
+    return f"pattern '{family}' + override file reach agent and guard: {opened}"
+
+
 def check_invalid_transition(tmp):
     t = fresh(tmp, "transition")
     t.call("open_part", {"name": ANY_PART})
@@ -149,7 +167,7 @@ def check_budget(tmp):
     return "solve budget enforced; a graceful 'failed' report is still accepted"
 
 
-CHECKS = [check_constraint_guard, check_invalid_transition, check_usage_error, check_save_requires_pass,
+CHECKS = [check_constraint_guard, check_injected_constraints, check_invalid_transition, check_usage_error, check_save_requires_pass,
           check_wrong_part, check_non_default_load, check_single_parameter, check_report_contradiction,
           check_injected_faults, check_budget]
 

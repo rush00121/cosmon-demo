@@ -34,14 +34,17 @@ def parse_args(argv=None):
     p.add_argument("--no-guards", action="store_true", help="disable tool guards (to produce bad traces)")
     p.add_argument("--faults", default="", help="e.g. mesh:fail,solve:timeout (each fires once)")
     p.add_argument("--parts-dir", type=Path, default=DEFAULT_PARTS)
-    p.add_argument("--constraints", type=Path, default=DEFAULT_CONSTRAINTS)
+    p.add_argument("--constraints", type=Path, action="append",
+                   help="constraints JSON; repeatable, later files override (default: agent/constraints.json)")
     p.add_argument("--outputs-dir", type=Path, default=ROOT / "outputs")
     p.add_argument("--lessons", type=Path, default=DEFAULT_LESSONS)
     p.add_argument("--max-solves", type=int, default=12)
     p.add_argument("--max-calls", type=int, default=60)
     p.add_argument("--timeout-s", type=int, default=600)
     p.add_argument("--tag", default="")
-    return p.parse_args(argv)
+    a = p.parse_args(argv)
+    a.constraints = [c.resolve() for c in (a.constraints or [DEFAULT_CONSTRAINTS])]
+    return a
 
 
 def run(a) -> dict:
@@ -56,7 +59,8 @@ def run(a) -> dict:
     tracer = Tracer(harness_path, run_id)
     tracer.emit("run_start", part=a.part, backend="claude_cli", model=a.model, memory=a.memory,
                 guards=not a.no_guards, faults=a.faults, parts_dir=str(a.parts_dir),
-                constraints=Constraints(a.constraints).for_part(a.part),
+                constraints=Constraints(*a.constraints).for_part(a.part),
+                constraint_sources=[str(c) for c in a.constraints],
                 budgets={"max_solves": a.max_solves, "max_calls": a.max_calls},
                 tools=sorted(SCHEMAS), system_prompt=SYSTEM_PROMPT,
                 system_prompt_sha=hashlib.sha256(SYSTEM_PROMPT.encode()).hexdigest()[:12])
@@ -64,7 +68,7 @@ def run(a) -> dict:
 
     server_env = {
         "PYTHONPATH": str(ROOT), "PARTLAB_RUN_ID": run_id, "PARTLAB_TRACE": str(harness_path),
-        "PARTLAB_WORKDIR": str(workdir), "PARTLAB_CONSTRAINTS": str(a.constraints.resolve()),
+        "PARTLAB_WORKDIR": str(workdir), "PARTLAB_CONSTRAINTS": os.pathsep.join(map(str, a.constraints)),
         "PARTLAB_OUTPUTS": str(a.outputs_dir.resolve()), "PARTLAB_GUARDS": "0" if a.no_guards else "1",
         "PARTLAB_MAX_SOLVES": str(a.max_solves), "PARTLAB_MAX_CALLS": str(a.max_calls),
         "PARTLAB_FAULTS": a.faults, "PARTLAB_PART": a.part,
@@ -93,7 +97,7 @@ def run(a) -> dict:
     for line in stream_path.read_text().splitlines():
         if '"type":"result"' in line.replace(" ", ""):
             result_line = json.loads(line)
-    oracle = verify(saved, Constraints(a.constraints), a.parts_dir) if saved.exists() else {"saved": False}
+    oracle = verify(saved, Constraints(*a.constraints), a.parts_dir) if saved.exists() else {"saved": False}
 
     tracer = Tracer(harness_path, run_id)
     tracer.emit("oracle", saved_exists=saved.exists(), **oracle)

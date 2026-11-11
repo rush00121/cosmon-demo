@@ -26,7 +26,7 @@ def build() -> tuple[PartLabTools, Tracer]:
     run_id = env["PARTLAB_RUN_ID"]
     tracer = Tracer(Path(env["PARTLAB_TRACE"]), run_id)
     lessons = LessonStore(Path(env["PARTLAB_LESSONS"])) if env.get("PARTLAB_LESSONS") else None
-    tools = PartLabTools(PartLab(Path(env["PARTLAB_WORKDIR"])), Constraints(Path(env["PARTLAB_CONSTRAINTS"])),
+    tools = PartLabTools(PartLab(Path(env["PARTLAB_WORKDIR"])), Constraints(*map(Path, env["PARTLAB_CONSTRAINTS"].split(os.pathsep))),
                          outputs_dir=Path(env["PARTLAB_OUTPUTS"]), lessons=lessons,
                          guards=env.get("PARTLAB_GUARDS", "1") == "1",
                          max_solves=int(env.get("PARTLAB_MAX_SOLVES", 12)),

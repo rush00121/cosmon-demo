@@ -4,3 +4,4 @@ runs/
 *.zip
 __pycache__/
 .DS_Store
+stress/parts_seed*/
