@@ -18,6 +18,7 @@ from .partlab_client import ROOT, Envelope, PartLab
 
 SF_TARGET = 2.0
 SF_TOL = 1e-3
+SENSIBLE_RANGE = (0.25, 4.0)  # multiples of the original value when a parameter has no stated limit
 MAX_RESULT_BYTES = 2000
 # Commands whose side effects change SDK state; the harness snapshots phase after these.
 MUTATING = {"open_part", "mesh", "apply_load", "solve", "set_parameter", "revert_parameters", "save_part"}

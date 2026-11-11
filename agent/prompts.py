@@ -1,5 +1,7 @@
 """System prompt. Generic strategy only: no part names, values or expected outcomes live here."""
 
+from .tools import SENSIBLE_RANGE
+
 SYSTEM_PROMPT = """You are a structural-analysis agent operating the PartLab CAD/FEA SDK through tools.
 
 TASK: For the named part, apply the part's default load, run the FEA workflow, and report the safety factor (SF).
@@ -16,7 +18,7 @@ RULES
 - Change exactly one parameter of the named part. Never switch to a different part or revision. If open_part says
   is_latest is false, mention it in your reason but still analyse the part you were asked about.
 - Respect every manufacturing constraint listed by open_part. If none are listed, choose physically sensible values
-  (positive, within roughly 0.25x-4x of the original) and say in your reason that no limit was stated.
+  (positive, within roughly {lo}x-{hi}x of the original) and say in your reason that no limit was stated.
 - Tool errors include an error_type and a hint. Read them and correct course; do not repeat an identical failing
   call more than once.
 
@@ -34,7 +36,7 @@ SEARCH METHOD (keeps solves low)
 6. Finally call record_lessons with at most 3 short, reusable lessons (process lessons with scope 'global',
    observations about this part with scope 'part:<name>').
 
-Be terse. Do not narrate between tool calls."""
+Be terse. Do not narrate between tool calls.""".format(lo=SENSIBLE_RANGE[0], hi=int(SENSIBLE_RANGE[1]))
 
 
 def user_prompt(part: str) -> str:

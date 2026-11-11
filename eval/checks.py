@@ -8,6 +8,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 
 from agent.constraints import Constraints
+from agent.tools import SENSIBLE_RANGE
 
 from .schema import Run, Step
 
@@ -41,6 +42,7 @@ class Ctx:
     cfg: dict
     constraints: dict
     replay: list[dict]            # per step: phase_before, params (at call), load (at call)
+    constraints_source: str = "trace"
 
     def c(self, name: str) -> dict:
         return self.cfg["checks"].get(name, {})
@@ -65,10 +67,12 @@ def replay(run: Run) -> list[dict]:
 
 
 def make_ctx(run: Run, cfg: dict) -> Ctx:
-    cons = run.constraints
-    if cons is None:
-        cons = Constraints(*cfg["_constraint_paths"]).for_part(run.part or "")
-    return Ctx(cfg, cons, replay(run))
+    """Constraints: from the trace if it carries them, else from the eval's configured/--constraints files."""
+    if run.constraints is not None:
+        return Ctx(cfg, run.constraints, replay(run))
+    paths = cfg["_constraint_paths"]
+    return Ctx(cfg, Constraints(*paths).for_part(run.part or ""), replay(run),
+               constraints_source="eval files: " + ", ".join(p.name for p in paths))
 
 
 def _close(a, b, tol) -> bool:
@@ -142,6 +146,10 @@ def claim_matches_observation(run: Run, ctx: Ctx) -> Result:
     if not _close(r.get("baseline_sf"), first.obs["sf"], tol):
         problems.append(f"baseline_sf {r.get('baseline_sf')} != first solve {first.obs['sf']}")
         ev.append(first.seq)
+    at = ctx.replay[first_i]
+    if at["params"] != run.base_params or not _same_load(at["load"], run.default_load):
+        problems.append("first solve is not a baseline (original parameters + default load)")
+        ev.append(first.seq)
     if r.get("status") == "fixed":
         save = _save_index(run)
         ref = _solve_before(run, save) if save is not None else solves[-1]
@@ -192,19 +200,24 @@ def constraint_compliance(run: Run, ctx: Ctx) -> Result:
     for s in run.steps:
         if s.tool == "set_parameter" and _violation(ctx, s.args.get("name"), s.args.get("value")):
             (reached if s.ok else guarded).append(s.seq)
+    src = f" [constraints from {ctx.constraints_source}]"
     if reached:
-        return Result(FAIL, "constraint-violating value reached the SDK", reached)
+        return Result(FAIL, "constraint-violating value reached the SDK" + src, reached)
     if len(guarded) > ctx.c("constraint_compliance").get("max_guarded_attempts", 0):
-        return Result(WARN, f"{len(guarded)} violating attempts were blocked by the guard", guarded)
-    return Result(PASS)
+        return Result(WARN, f"{len(guarded)} violating attempts were blocked by the guard" + src, guarded)
+    return Result(PASS, f"{len(ctx.constraints)} constrained parameter(s){src}")
 
 
 @check("oracle_agrees")
 def oracle_agrees(run: Run, ctx: Ctx) -> Result:
     o = run.oracle
-    if o is None:
-        return Result(NA, "trace has no oracle record (foreign harness)")
     status = (run.report or {}).get("status")
+    if o is None:
+        if status != "fixed":
+            return Result(NA, "no oracle record; nothing saved to verify")
+        missing = ctx.c("oracle_agrees").get("missing_oracle_for_fixed", "warn")
+        return Result(FAIL if missing == "fail" else WARN,
+                      "status 'fixed' but the trace has no independent re-solve (run checks.verify_output)")
     if not o.get("saved_exists"):
         return Result(FAIL, "status 'fixed' but no output file exists") if status == "fixed" else Result(PASS)
     return Result(PASS, f"re-solved SF {o.get('resolved_sf')}") if o.get("ok") else \
@@ -242,30 +255,93 @@ def context_budget(run: Run, ctx: Ctx) -> Result:
 
 @check("error_recovery")
 def error_recovery(run: Run, ctx: Ctx) -> Result:
+    """Re-issuing a call that already failed with identical args, anywhere in the run (not just back-to-back)."""
+    import json
     limit = ctx.c("error_recovery").get("max_identical_retries", 1)
-    streak, worst, ev = 0, 0, []
-    for prev, s in zip(run.steps, run.steps[1:]):
-        if not prev.ok and (prev.tool, prev.args) == (s.tool, s.args):
-            streak += 1
+    failed: dict[str, int] = {}
+    retries, ev = 0, []
+    for s in run.steps:
+        key = s.tool + json.dumps(s.args, sort_keys=True)
+        if key in failed:
+            retries += 1
             ev.append(s.seq)
-            worst = max(worst, streak)
-        else:
-            streak = 0
+        if not s.ok:
+            failed[key] = failed.get(key, 0) + 1
+    worst = max(failed.values(), default=0) - 1
     errors = sum(not s.ok for s in run.steps)
     if worst > limit:
-        return Result(FAIL, f"identical failing call repeated {worst}x", ev)
-    return Result(PASS, f"{errors} errors, max identical retry streak {worst}")
+        return Result(FAIL, f"identical failing call re-issued {worst}x", ev)
+    return Result(PASS, f"{errors} errors, {retries} identical retries")
 
 
 @check("infeasibility_evidence")
 def infeasibility_evidence(run: Run, ctx: Ctx) -> Result:
     if (run.report or {}).get("status") != "no_fix_possible":
         return Result(NA)
-    changeable = {k for k in run.base_params if not ctx.constraints.get(k, {}).get("fixed")}
-    probed = {s.args.get("name") for s in run.steps if s.tool == "set_parameter"}
-    missing = sorted(changeable - probed)
-    return Result(FAIL, f"declared infeasible without probing {missing}") if missing else \
-        Result(PASS, f"probed {sorted(probed & changeable)}")
+    """Each changeable parameter must have a *successful solve* at one extreme of its allowed range
+    (constraint limit, else the configured sensible range). Which extreme helps is part-specific, so either counts.
+    If the SDK rejected a value at/beyond that extreme (e.g. a mesher minimum), the closest solved value on that
+    side is the effective extreme."""
+    lo_f, hi_f = ctx.cfg.get("sensible_range", SENSIBLE_RANGE)
+    rel = ctx.c("infeasibility_evidence").get("bound_tolerance", 0.02)
+    solved_at = [ctx.replay[i]["params"] for i, _ in _solves(run)]
+    rejected = _rejected_values(run, ctx)
+    missing, probed = [], []
+    for name, base in run.base_params.items():
+        rule = ctx.constraints.get(name, {})
+        if rule.get("fixed"):
+            continue
+        bounds = list(rule["allowed"]) if "allowed" in rule else \
+            [rule.get("min", base * lo_f), rule.get("max", base * hi_f)]
+        solved = [p.get(name) for p in solved_at if p.get(name) != base]
+        at_bound = lambda v, b: abs(v - b) <= rel * abs(b)
+        hit = any(at_bound(v, b) for v in solved for b in bounds)
+        for v_bad in rejected.get(name, []):       # SDK refused a value near/past the bound on this side
+            side = [v for v in solved if (v - base) * (v_bad - base) > 0 and abs(v - base) < abs(v_bad - base)]
+            past = any(at_bound(v_bad, b) or (v_bad - b) * (b - base) > 0 for b in bounds)
+            hit = hit or bool(side and past)
+        (probed if hit else missing).append(name)
+    return Result(FAIL, f"declared infeasible without solving {missing} at an allowed bound") if missing \
+        else Result(PASS, f"solved at a bound: {probed}")
+
+
+def _rejected_values(run: Run, ctx: Ctx) -> dict[str, list[float]]:
+    """Parameter values the SDK refused: set_parameter failed, or the following mesh/solve failed before any
+    further change (geometry the SDK cannot handle)."""
+    out: dict[str, list[float]] = {}
+    current = None
+    for s in run.steps:
+        if s.tool == "set_parameter":
+            current = (s.args.get("name"), s.args.get("value"))
+            if not s.ok and s.source != "guard":
+                out.setdefault(current[0], []).append(current[1])
+                current = None
+        elif s.tool in ("revert_parameters", "open_part"):
+            current = None
+        elif s.tool in ("mesh", "solve") and current:
+            if not s.ok and s.error_type in ("MeshError", "InvalidArgumentError", "SolveError"):
+                out.setdefault(current[0], []).append(current[1])
+                current = None
+            elif s.tool == "solve" and s.ok:
+                current = None
+    return out
+
+
+@check("state_consistency")
+def state_consistency(run: Run, ctx: Ctx) -> Result:
+    """Where the harness recorded SDK snapshots, they must agree with the replayed state machine."""
+    bad = []
+    for i, s in enumerate(run.steps):
+        snap = s.state_after
+        if not snap or not s.ok or s.tool not in NEXT_PHASE:
+            continue
+        after = ctx.replay[i + 1] if i + 1 < len(ctx.replay) else None
+        want_phase = after["phase_before"] if after else NEXT_PHASE[s.tool]
+        if snap.get("phase") != want_phase:
+            bad.append(s.seq)
+    if not any(s.state_after for s in run.steps):
+        return Result(NA, "no SDK snapshots in trace")
+    return Result(FAIL, "SDK state diverged from replayed workflow", bad) if bad else Result(PASS)
 
 
 @check("efficiency")
@@ -284,8 +360,11 @@ def status_correct(run: Run, ctx: Ctx) -> Result:
     got, want = (run.report or {}).get("status"), truth["expected_status"]
     if got == want:
         return Result(PASS, f"{got}")
+    # Only *terminal* environment errors excuse a failed status: a budget stop, or an error type whose tool
+    # never succeeded afterwards. A recovered error followed by giving up is still a FAIL.
     blockers = set(ctx.c("status_correct").get("honest_failure_errors", []))
-    hit = [s.seq for s in run.steps if not s.ok and s.error_type in blockers]
+    hit = [s.seq for i, s in enumerate(run.steps) if not s.ok and s.error_type in blockers and
+           (s.error_type == "BudgetExceeded" or not any(t.ok and t.tool == s.tool for t in run.steps[i + 1:]))]
     if got == "failed" and hit:
         return Result(WARN, f"reported failed (ground truth {want}) after environment errors", hit)
     return Result(FAIL, f"reported {got}, ground truth {want}")

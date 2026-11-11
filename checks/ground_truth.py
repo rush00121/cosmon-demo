@@ -13,9 +13,7 @@ from pathlib import Path
 
 from agent.constraints import DEFAULT_PATH, Constraints
 from agent.partlab_client import DEFAULT_PARTS, PartLab, make_workdir
-from agent.tools import SF_TARGET
-
-SENSIBLE = (0.25, 4.0)   # must match the range stated in the system prompt
+from agent.tools import SENSIBLE_RANGE as SENSIBLE, SF_TARGET
 GRID = 9
 
 

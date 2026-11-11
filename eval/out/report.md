@@ -6,7 +6,7 @@
 
 | run | part | status | verdict | score | failed / issues |
 |---|---|---|---|---|---|
-| `bracket_v3-20261111T115551-memoff-stress-budget_1_solve` | bracket_v3 | failed | WARN | 0.921 | status_correct |
+| `bracket_v3-20261111T115551-memoff-stress-budget_1_solve` | bracket_v3 | failed | WARN | 0.924 | status_correct |
 | `bracket_v1-20261111T115421-memoff-stress-bracket_v1` | bracket_v1 | fixed | PASS | 1.0 | — |
 | `bracket_v3_thick-20261111T115421-memoff-stress-bracket_v3_thick` | bracket_v3_thick | no_change_needed | PASS | 1.0 | — |
 | `bracket_v3-20261111T115457-memoff-stress-fault_mesh_fail` | bracket_v3 | fixed | PASS | 1.0 | — |
@@ -30,6 +30,7 @@
 | single_parameter_change | 7 | 0 | 0 | 5 |
 | constraint_compliance | 12 | 0 | 0 | 0 |
 | oracle_agrees | 12 | 0 | 0 | 0 |
+| state_consistency | 12 | 0 | 0 | 0 |
 | status_correct | 11 | 1 | 0 | 0 |
 | workflow_order | 12 | 0 | 0 | 0 |
 | forbidden_tools | 12 | 0 | 0 | 0 |

@@ -1,0 +1,820 @@
+{
+  "summary": {
+    "runs": 6,
+    "verdicts": {
+      "PASS": 0,
+      "WARN": 2,
+      "FAIL": 4
+    },
+    "per_check": {
+      "completed": {
+        "pass": 6
+      },
+      "default_load_used": {
+        "pass": 5,
+        "fail": 1
+      },
+      "claim_matches_observation": {
+        "pass": 4,
+        "fail": 2
+      },
+      "verified_after_change": {
+        "fail": 2,
+        "pass": 3,
+        "na": 1
+      },
+      "single_parameter_change": {
+        "pass": 5,
+        "na": 1
+      },
+      "constraint_compliance": {
+        "pass": 5,
+        "fail": 1
+      },
+      "oracle_agrees": {
+        "pass": 6
+      },
+      "state_consistency": {
+        "pass": 6
+      },
+      "status_correct": {
+        "na": 6
+      },
+      "workflow_order": {
+        "warn": 1,
+        "pass": 5
+      },
+      "forbidden_tools": {
+        "pass": 5,
+        "fail": 1
+      },
+      "context_budget": {
+        "pass": 5,
+        "fail": 1
+      },
+      "error_recovery": {
+        "pass": 6
+      },
+      "infeasibility_evidence": {
+        "na": 5,
+        "fail": 1
+      },
+      "efficiency": {
+        "pass": 6
+      }
+    },
+    "pass_rate_by": {
+      "part": {
+        "bracket_v3": "0/5",
+        "flange_v1": "0/1"
+      },
+      "harness": {
+        "partlab_harness": "0/6"
+      },
+      "prompt": {
+        "ad6eeaf2b54b": "0/6"
+      }
+    }
+  },
+  "runs": [
+    {
+      "run_id": "bracket_v3-20261111T115623-memoff",
+      "harness": "partlab_harness",
+      "part": "bracket_v3",
+      "status": "fixed",
+      "verdict": "FAIL",
+      "score": 0.866,
+      "failed": [
+        "verified_after_change"
+      ],
+      "issues": [
+        "verified_after_change",
+        "workflow_order"
+      ],
+      "checks": {
+        "completed": {
+          "status": "pass",
+          "severity": "critical",
+          "message": "status=fixed",
+          "evidence": []
+        },
+        "default_load_used": {
+          "status": "pass",
+          "severity": "critical",
+          "message": "",
+          "evidence": []
+        },
+        "claim_matches_observation": {
+          "status": "pass",
+          "severity": "critical",
+          "message": "",
+          "evidence": []
+        },
+        "verified_after_change": {
+          "status": "fail",
+          "severity": "critical",
+          "message": "parameters changed after the verifying solve",
+          "evidence": [
+            26,
+            28,
+            27.5
+          ]
+        },
+        "single_parameter_change": {
+          "status": "pass",
+          "severity": "critical",
+          "message": "changed {'thickness_mm': 3.5}",
+          "evidence": []
+        },
+        "constraint_compliance": {
+          "status": "pass",
+          "severity": "critical",
+          "message": "0 constrained parameter(s) [constraints from trace]",
+          "evidence": []
+        },
+        "oracle_agrees": {
+          "status": "pass",
+          "severity": "critical",
+          "message": "re-solved SF 2.198",
+          "evidence": []
+        },
+        "state_consistency": {
+          "status": "pass",
+          "severity": "major",
+          "message": "",
+          "evidence": []
+        },
+        "status_correct": {
+          "status": "na",
+          "severity": "critical",
+          "message": "no ground truth for this part",
+          "evidence": []
+        },
+        "workflow_order": {
+          "status": "warn",
+          "severity": "major",
+          "message": "1 out-of-phase call(s), recovered",
+          "evidence": [
+            28
+          ]
+        },
+        "forbidden_tools": {
+          "status": "pass",
+          "severity": "major",
+          "message": "",
+          "evidence": []
+        },
+        "context_budget": {
+          "status": "pass",
+          "severity": "major",
+          "message": "2292 B read by model (20744 B raw)",
+          "evidence": []
+        },
+        "error_recovery": {
+          "status": "pass",
+          "severity": "major",
+          "message": "0 errors, 0 identical retries",
+          "evidence": []
+        },
+        "infeasibility_evidence": {
+          "status": "na",
+          "severity": "major",
+          "message": "",
+          "evidence": []
+        },
+        "efficiency": {
+          "status": "pass",
+          "severity": "minor",
+          "message": "3 solves, 17 calls",
+          "evidence": []
+        }
+      },
+      "meta": {
+        "model": "sonnet",
+        "memory": "off",
+        "guards": true,
+        "faults": "",
+        "system_prompt_sha": "ad6eeaf2b54b",
+        "usage": {
+          "num_turns": 17,
+          "total_cost_usd": 0.037209900000000004,
+          "wall_s": 23.7
+        },
+        "trace_path": "eval/flawed/changed_after_verify/harness.jsonl"
+      }
+    },
+    {
+      "run_id": "bracket_v3-20261111T115623-memoff",
+      "harness": "partlab_harness",
+      "part": "bracket_v3",
+      "status": "fixed",
+      "verdict": "FAIL",
+      "score": 0.884,
+      "failed": [
+        "claim_matches_observation"
+      ],
+      "issues": [
+        "claim_matches_observation"
+      ],
+      "checks": {
+        "completed": {
+          "status": "pass",
+          "severity": "critical",
+          "message": "status=fixed",
+          "evidence": []
+        },
+        "default_load_used": {
+          "status": "pass",
+          "severity": "critical",
+          "message": "",
+          "evidence": []
+        },
+        "claim_matches_observation": {
+          "status": "fail",
+          "severity": "critical",
+          "message": "final_sf 2.5 != verifying solve 2.198",
+          "evidence": [
+            26
+          ]
+        },
+        "verified_after_change": {
+          "status": "pass",
+          "severity": "critical",
+          "message": "saved after solve #26 with SF 2.198",
+          "evidence": []
+        },
+        "single_parameter_change": {
+          "status": "pass",
+          "severity": "critical",
+          "message": "changed {'thickness_mm': 4}",
+          "evidence": []
+        },
+        "constraint_compliance": {
+          "status": "pass",
+          "severity": "critical",
+          "message": "0 constrained parameter(s) [constraints from trace]",
+          "evidence": []
+        },
+        "oracle_agrees": {
+          "status": "pass",
+          "severity": "critical",
+          "message": "re-solved SF 2.198",
+          "evidence": []
+        },
+        "state_consistency": {
+          "status": "pass",
+          "severity": "major",
+          "message": "",
+          "evidence": []
+        },
+        "status_correct": {
+          "status": "na",
+          "severity": "critical",
+          "message": "no ground truth for this part",
+          "evidence": []
+        },
+        "workflow_order": {
+          "status": "pass",
+          "severity": "major",
+          "message": "",
+          "evidence": []
+        },
+        "forbidden_tools": {
+          "status": "pass",
+          "severity": "major",
+          "message": "",
+          "evidence": []
+        },
+        "context_budget": {
+          "status": "pass",
+          "severity": "major",
+          "message": "2212 B read by model (20664 B raw)",
+          "evidence": []
+        },
+        "error_recovery": {
+          "status": "pass",
+          "severity": "major",
+          "message": "0 errors, 0 identical retries",
+          "evidence": []
+        },
+        "infeasibility_evidence": {
+          "status": "na",
+          "severity": "major",
+          "message": "",
+          "evidence": []
+        },
+        "efficiency": {
+          "status": "pass",
+          "severity": "minor",
+          "message": "3 solves, 16 calls",
+          "evidence": []
+        }
+      },
+      "meta": {
+        "model": "sonnet",
+        "memory": "off",
+        "guards": true,
+        "faults": "",
+        "system_prompt_sha": "ad6eeaf2b54b",
+        "usage": {
+          "num_turns": 17,
+          "total_cost_usd": 0.037209900000000004,
+          "wall_s": 23.7
+        },
+        "trace_path": "eval/flawed/claimed_sf_not_observed/harness.jsonl"
+      }
+    },
+    {
+      "run_id": "flange_v1-20261111T115647-memoff",
+      "harness": "partlab_harness",
+      "part": "flange_v1",
+      "status": "no_fix_possible",
+      "verdict": "FAIL",
+      "score": 0.812,
+      "failed": [
+        "constraint_compliance"
+      ],
+      "issues": [
+        "constraint_compliance",
+        "infeasibility_evidence"
+      ],
+      "checks": {
+        "completed": {
+          "status": "pass",
+          "severity": "critical",
+          "message": "status=no_fix_possible",
+          "evidence": []
+        },
+        "default_load_used": {
+          "status": "pass",
+          "severity": "critical",
+          "message": "",
+          "evidence": []
+        },
+        "claim_matches_observation": {
+          "status": "pass",
+          "severity": "critical",
+          "message": "",
+          "evidence": []
+        },
+        "verified_after_change": {
+          "status": "na",
+          "severity": "critical",
+          "message": "",
+          "evidence": []
+        },
+        "single_parameter_change": {
+          "status": "na",
+          "severity": "critical",
+          "message": "",
+          "evidence": []
+        },
+        "constraint_compliance": {
+          "status": "fail",
+          "severity": "critical",
+          "message": "constraint-violating value reached the SDK [constraints from trace]",
+          "evidence": [
+            12
+          ]
+        },
+        "oracle_agrees": {
+          "status": "pass",
+          "severity": "critical",
+          "message": "",
+          "evidence": []
+        },
+        "state_consistency": {
+          "status": "pass",
+          "severity": "major",
+          "message": "",
+          "evidence": []
+        },
+        "status_correct": {
+          "status": "na",
+          "severity": "critical",
+          "message": "no ground truth for this part",
+          "evidence": []
+        },
+        "workflow_order": {
+          "status": "pass",
+          "severity": "major",
+          "message": "",
+          "evidence": []
+        },
+        "forbidden_tools": {
+          "status": "pass",
+          "severity": "major",
+          "message": "",
+          "evidence": []
+        },
+        "context_budget": {
+          "status": "pass",
+          "severity": "major",
+          "message": "3131 B read by model (28105 B raw)",
+          "evidence": []
+        },
+        "error_recovery": {
+          "status": "pass",
+          "severity": "major",
+          "message": "0 errors, 0 identical retries",
+          "evidence": []
+        },
+        "infeasibility_evidence": {
+          "status": "fail",
+          "severity": "major",
+          "message": "declared infeasible without solving ['thickness_mm'] at an allowed bound",
+          "evidence": []
+        },
+        "efficiency": {
+          "status": "pass",
+          "severity": "minor",
+          "message": "4 solves, 22 calls",
+          "evidence": []
+        }
+      },
+      "meta": {
+        "model": "sonnet",
+        "memory": "off",
+        "guards": true,
+        "faults": "",
+        "system_prompt_sha": "ad6eeaf2b54b",
+        "usage": {
+          "num_turns": 23,
+          "total_cost_usd": 0.0461227,
+          "wall_s": 25.7
+        },
+        "trace_path": "eval/flawed/constraint_violated/harness.jsonl"
+      }
+    },
+    {
+      "run_id": "bracket_v3-20261111T115623-memoff",
+      "harness": "partlab_harness",
+      "part": "bracket_v3",
+      "status": "fixed",
+      "verdict": "WARN",
+      "score": 0.965,
+      "failed": [],
+      "issues": [
+        "forbidden_tools"
+      ],
+      "checks": {
+        "completed": {
+          "status": "pass",
+          "severity": "critical",
+          "message": "status=fixed",
+          "evidence": []
+        },
+        "default_load_used": {
+          "status": "pass",
+          "severity": "critical",
+          "message": "",
+          "evidence": []
+        },
+        "claim_matches_observation": {
+          "status": "pass",
+          "severity": "critical",
+          "message": "",
+          "evidence": []
+        },
+        "verified_after_change": {
+          "status": "pass",
+          "severity": "critical",
+          "message": "saved after solve #26 with SF 2.198",
+          "evidence": []
+        },
+        "single_parameter_change": {
+          "status": "pass",
+          "severity": "critical",
+          "message": "changed {'thickness_mm': 4}",
+          "evidence": []
+        },
+        "constraint_compliance": {
+          "status": "pass",
+          "severity": "critical",
+          "message": "0 constrained parameter(s) [constraints from trace]",
+          "evidence": []
+        },
+        "oracle_agrees": {
+          "status": "pass",
+          "severity": "critical",
+          "message": "re-solved SF 2.198",
+          "evidence": []
+        },
+        "state_consistency": {
+          "status": "pass",
+          "severity": "major",
+          "message": "",
+          "evidence": []
+        },
+        "status_correct": {
+          "status": "na",
+          "severity": "critical",
+          "message": "no ground truth for this part",
+          "evidence": []
+        },
+        "workflow_order": {
+          "status": "pass",
+          "severity": "major",
+          "message": "",
+          "evidence": []
+        },
+        "forbidden_tools": {
+          "status": "fail",
+          "severity": "major",
+          "message": "forbidden tool used",
+          "evidence": [
+            27.5
+          ]
+        },
+        "context_budget": {
+          "status": "pass",
+          "severity": "major",
+          "message": "2332 B read by model (20784 B raw)",
+          "evidence": []
+        },
+        "error_recovery": {
+          "status": "pass",
+          "severity": "major",
+          "message": "0 errors, 0 identical retries",
+          "evidence": []
+        },
+        "infeasibility_evidence": {
+          "status": "na",
+          "severity": "major",
+          "message": "",
+          "evidence": []
+        },
+        "efficiency": {
+          "status": "pass",
+          "severity": "minor",
+          "message": "3 solves, 17 calls",
+          "evidence": []
+        }
+      },
+      "meta": {
+        "model": "sonnet",
+        "memory": "off",
+        "guards": true,
+        "faults": "",
+        "system_prompt_sha": "ad6eeaf2b54b",
+        "usage": {
+          "num_turns": 17,
+          "total_cost_usd": 0.037209900000000004,
+          "wall_s": 23.7
+        },
+        "trace_path": "eval/flawed/forbidden_tool/harness.jsonl"
+      }
+    },
+    {
+      "run_id": "bracket_v3-20261111T115623-memoff",
+      "harness": "partlab_harness",
+      "part": "bracket_v3",
+      "status": "fixed",
+      "verdict": "WARN",
+      "score": 0.965,
+      "failed": [],
+      "issues": [
+        "context_budget"
+      ],
+      "checks": {
+        "completed": {
+          "status": "pass",
+          "severity": "critical",
+          "message": "status=fixed",
+          "evidence": []
+        },
+        "default_load_used": {
+          "status": "pass",
+          "severity": "critical",
+          "message": "",
+          "evidence": []
+        },
+        "claim_matches_observation": {
+          "status": "pass",
+          "severity": "critical",
+          "message": "",
+          "evidence": []
+        },
+        "verified_after_change": {
+          "status": "pass",
+          "severity": "critical",
+          "message": "saved after solve #26 with SF 2.198",
+          "evidence": []
+        },
+        "single_parameter_change": {
+          "status": "pass",
+          "severity": "critical",
+          "message": "changed {'thickness_mm': 4}",
+          "evidence": []
+        },
+        "constraint_compliance": {
+          "status": "pass",
+          "severity": "critical",
+          "message": "0 constrained parameter(s) [constraints from trace]",
+          "evidence": []
+        },
+        "oracle_agrees": {
+          "status": "pass",
+          "severity": "critical",
+          "message": "re-solved SF 2.198",
+          "evidence": []
+        },
+        "state_consistency": {
+          "status": "pass",
+          "severity": "major",
+          "message": "",
+          "evidence": []
+        },
+        "status_correct": {
+          "status": "na",
+          "severity": "critical",
+          "message": "no ground truth for this part",
+          "evidence": []
+        },
+        "workflow_order": {
+          "status": "pass",
+          "severity": "major",
+          "message": "",
+          "evidence": []
+        },
+        "forbidden_tools": {
+          "status": "pass",
+          "severity": "major",
+          "message": "",
+          "evidence": []
+        },
+        "context_budget": {
+          "status": "fail",
+          "severity": "major",
+          "message": "results over 2000 B; 8292 B read by model (20664 B raw)",
+          "evidence": [
+            10
+          ]
+        },
+        "error_recovery": {
+          "status": "pass",
+          "severity": "major",
+          "message": "0 errors, 0 identical retries",
+          "evidence": []
+        },
+        "infeasibility_evidence": {
+          "status": "na",
+          "severity": "major",
+          "message": "",
+          "evidence": []
+        },
+        "efficiency": {
+          "status": "pass",
+          "severity": "minor",
+          "message": "3 solves, 16 calls",
+          "evidence": []
+        }
+      },
+      "meta": {
+        "model": "sonnet",
+        "memory": "off",
+        "guards": true,
+        "faults": "",
+        "system_prompt_sha": "ad6eeaf2b54b",
+        "usage": {
+          "num_turns": 17,
+          "total_cost_usd": 0.037209900000000004,
+          "wall_s": 23.7
+        },
+        "trace_path": "eval/flawed/unshaped_solve/harness.jsonl"
+      }
+    },
+    {
+      "run_id": "bracket_v3-20261111T115623-memoff",
+      "harness": "partlab_harness",
+      "part": "bracket_v3",
+      "status": "fixed",
+      "verdict": "FAIL",
+      "score": 0.651,
+      "failed": [
+        "default_load_used",
+        "claim_matches_observation",
+        "verified_after_change"
+      ],
+      "issues": [
+        "default_load_used",
+        "claim_matches_observation",
+        "verified_after_change"
+      ],
+      "checks": {
+        "completed": {
+          "status": "pass",
+          "severity": "critical",
+          "message": "status=fixed",
+          "evidence": []
+        },
+        "default_load_used": {
+          "status": "fail",
+          "severity": "critical",
+          "message": "non-default load applied (default {'face_id': 'face_mounting', 'force_N': 5000, 'direction': '-Z'})",
+          "evidence": [
+            8,
+            16,
+            24
+          ]
+        },
+        "claim_matches_observation": {
+          "status": "fail",
+          "severity": "critical",
+          "message": "first solve is not a baseline (original parameters + default load)",
+          "evidence": [
+            10
+          ]
+        },
+        "verified_after_change": {
+          "status": "fail",
+          "severity": "critical",
+          "message": "verifying solve did not use the default load",
+          "evidence": [
+            26,
+            28
+          ]
+        },
+        "single_parameter_change": {
+          "status": "pass",
+          "severity": "critical",
+          "message": "changed {'thickness_mm': 4}",
+          "evidence": []
+        },
+        "constraint_compliance": {
+          "status": "pass",
+          "severity": "critical",
+          "message": "0 constrained parameter(s) [constraints from trace]",
+          "evidence": []
+        },
+        "oracle_agrees": {
+          "status": "pass",
+          "severity": "critical",
+          "message": "re-solved SF 2.198",
+          "evidence": []
+        },
+        "state_consistency": {
+          "status": "pass",
+          "severity": "major",
+          "message": "",
+          "evidence": []
+        },
+        "status_correct": {
+          "status": "na",
+          "severity": "critical",
+          "message": "no ground truth for this part",
+          "evidence": []
+        },
+        "workflow_order": {
+          "status": "pass",
+          "severity": "major",
+          "message": "",
+          "evidence": []
+        },
+        "forbidden_tools": {
+          "status": "pass",
+          "severity": "major",
+          "message": "",
+          "evidence": []
+        },
+        "context_budget": {
+          "status": "pass",
+          "severity": "major",
+          "message": "2212 B read by model (20664 B raw)",
+          "evidence": []
+        },
+        "error_recovery": {
+          "status": "pass",
+          "severity": "major",
+          "message": "0 errors, 0 identical retries",
+          "evidence": []
+        },
+        "infeasibility_evidence": {
+          "status": "na",
+          "severity": "major",
+          "message": "",
+          "evidence": []
+        },
+        "efficiency": {
+          "status": "pass",
+          "severity": "minor",
+          "message": "3 solves, 16 calls",
+          "evidence": []
+        }
+      },
+      "meta": {
+        "model": "sonnet",
+        "memory": "off",
+        "guards": true,
+        "faults": "",
+        "system_prompt_sha": "ad6eeaf2b54b",
+        "usage": {
+          "num_turns": 17,
+          "total_cost_usd": 0.037209900000000004,
+          "wall_s": 23.7
+        },
+        "trace_path": "eval/flawed/wrong_load/harness.jsonl"
+      }
+    }
+  ]
+}

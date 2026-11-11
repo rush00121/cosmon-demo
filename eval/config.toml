@@ -31,6 +31,10 @@ max_guarded_attempts = 0            # attempts blocked by a guard: above this ->
 
 [checks.oracle_agrees]              # independent re-solve of the saved file confirms the fix
 severity = "critical"
+missing_oracle_for_fixed = "warn"   # foreign traces without a re-solve: "warn" (visible) or "fail"
+
+[checks.state_consistency]          # recorded SDK snapshots agree with the replayed workflow
+severity = "major"
 
 [checks.status_correct]             # reported status == brute-force ground truth (needs --ground-truth)
 severity = "critical"
@@ -53,8 +57,10 @@ max_total_bytes = 12000
 severity = "major"
 max_identical_retries = 1
 
-[checks.infeasibility_evidence]     # no_fix_possible must show every changeable parameter was probed
+[checks.infeasibility_evidence]     # no_fix_possible: every changeable param solved at an allowed bound
 severity = "major"
+bound_tolerance = 0.02              # relative distance from a bound that still counts as "at the bound"
+# sensible_range (top level) overrides agent.tools.SENSIBLE_RANGE for unconstrained parameters
 
 [checks.efficiency]
 severity = "minor"

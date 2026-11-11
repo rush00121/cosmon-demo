@@ -42,7 +42,8 @@ def partlab_harness(path: Path) -> Run:
                               error_type=e.get("error_type"), source=e.get("source"), result=result,
                               result_bytes=e.get("shaped_bytes", 0), raw_bytes=e.get("raw_bytes"),
                               state_after=e.get("state_after"),
-                              obs=observe(e["tool"], bool(e.get("ok")), result)))
+                              obs=observe(e["tool"], bool(e.get("ok")), result),
+                              ts=c.get("ts"), duration_ms=e.get("duration_ms")))
         elif e["type"] == "report_check":
             attempts.append({**e["report"], "_problems": e["problems"]})
     meta = {k: start.get(k) for k in ("model", "memory", "guards", "faults", "budgets", "system_prompt_sha",

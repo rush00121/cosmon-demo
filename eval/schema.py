@@ -23,6 +23,8 @@ class Step:
     raw_bytes: int | None = None   # size before shaping, if known
     state_after: dict | None = None  # SDK phase/overrides snapshot, if the harness recorded one
     obs: dict = field(default_factory=dict)
+    ts: float | None = None        # call start (epoch seconds), if known
+    duration_ms: int | None = None
 
 
 @dataclass

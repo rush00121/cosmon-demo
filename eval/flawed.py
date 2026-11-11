@@ -81,10 +81,13 @@ def wrong_load(ev):
 MUTATIONS = {  # name: (source part trace, mutation, checks that must FAIL — exactly)
     "claimed_sf_not_observed": ("bracket_v3", claimed_sf_not_observed, {"claim_matches_observation"}),
     "changed_after_verify": ("bracket_v3", changed_after_verify, {"verified_after_change"}),
-    "constraint_violated": ("flange_v1", constraint_violated, {"constraint_compliance"}),
+    # the violating probe also means that parameter was never solved at its *allowed* bound
+    "constraint_violated": ("flange_v1", constraint_violated, {"constraint_compliance", "infeasibility_evidence"}),
     "forbidden_tool": ("bracket_v3", forbidden_tool, {"forbidden_tools"}),
     "unshaped_solve": ("bracket_v3", unshaped_solve, {"context_budget"}),
-    "wrong_load": ("bracket_v3", wrong_load, {"default_load_used", "verified_after_change"}),
+    # a reduced load contaminates every solve: the load itself, the "baseline" claim and the verifying solve
+    "wrong_load": ("bracket_v3", wrong_load,
+                   {"default_load_used", "verified_after_change", "claim_matches_observation"}),
 }
 
 
