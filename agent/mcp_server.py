@@ -6,6 +6,8 @@ from __future__ import annotations
 
 import json
 import os
+import signal
+import sys
 import time
 from pathlib import Path
 
@@ -47,7 +49,20 @@ def traced_call(tools: PartLabTools, tracer: Tracer, name: str, args: dict) -> d
                 **fields)
     for ev in outcome.events:
         tracer.emit(ev.pop("type"), call_seq=call["seq"], tool=name, **ev)
+    if name in STATE_CHANGING:
+        emit_session_state(tools, tracer)
     return outcome.shaped
+
+
+# The client may kill this process without a clean shutdown, so final state is written as it changes
+# (latest `session_state` event wins), not only on exit.
+STATE_CHANGING = {"save_part", "report_result", "record_lessons"}
+
+
+def emit_session_state(tools: PartLabTools, tracer: Tracer) -> None:
+    tracer.emit("session_state", report=tools.report, solves=tools.solves, calls=tools.calls,
+                saved_path=tools.saved_path, base_params=tools.base_params, part=tools.part,
+                default_load=tools.default_load)
 
 
 def main() -> None:
@@ -71,13 +86,11 @@ def main() -> None:
         async with stdio_server() as (r, w):
             await server.run(r, w, server.create_initialization_options())
 
+    signal.signal(signal.SIGTERM, lambda *_: sys.exit(0))
     try:
         anyio.run(run)
     finally:
-        # Final harness-side state so the eval can compare claims with reality.
-        tracer.emit("session_end", report=tools.report, solves=tools.solves, calls=tools.calls,
-                    saved_path=tools.saved_path, base_params=tools.base_params, part=tools.part,
-                    default_load=tools.default_load)
+        emit_session_state(tools, tracer)
         tracer.close()
 
 

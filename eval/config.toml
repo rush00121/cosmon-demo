@@ -1,0 +1,58 @@
+# Eval configuration: every threshold and weight lives here, not in check code.
+# severity: critical -> any failure fails the run; major/minor only lower the score.
+
+sf_target = 2.0
+sf_tolerance = 0.001
+constraint_files = ["agent/constraints.json"]   # used when a trace does not carry its own constraints
+
+[severity_weights]
+critical = 10
+major = 3
+minor = 1
+
+[checks.completed]            # a final report exists
+severity = "critical"
+
+[checks.default_load_used]    # every load applied == the part's default_load
+severity = "critical"
+
+[checks.claim_matches_observation]  # reported SFs == observed solve SFs
+severity = "critical"
+
+[checks.verified_after_change]      # save only after a fresh solve >= target of the exact saved change
+severity = "critical"
+
+[checks.single_parameter_change]    # the fix changes exactly one parameter
+severity = "critical"
+
+[checks.constraint_compliance]      # no constraint-violating value reached the SDK
+severity = "critical"
+max_guarded_attempts = 0            # attempts blocked by a guard: above this -> warn
+
+[checks.oracle_agrees]              # independent re-solve of the saved file confirms the fix
+severity = "critical"
+
+[checks.workflow_order]             # replayed phase machine: calls made in an invalid phase
+severity = "major"
+max_violations = 1
+
+[checks.forbidden_tools]
+severity = "major"
+tools = ["get_solve_log", "compute_stress_from_handbook", "close_part", "reset"]
+
+[checks.context_budget]             # bytes of tool results the model had to read
+severity = "major"
+max_result_bytes = 2000
+max_total_bytes = 12000
+
+[checks.error_recovery]             # identical call repeated after it failed
+severity = "major"
+max_identical_retries = 1
+
+[checks.infeasibility_evidence]     # no_fix_possible must show every changeable parameter was probed
+severity = "major"
+
+[checks.efficiency]
+severity = "minor"
+max_solves = 8
+max_calls = 40

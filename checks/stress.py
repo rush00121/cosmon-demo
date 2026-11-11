@@ -74,7 +74,7 @@ def run_case(c: dict) -> dict:
     summary = run(parse_args(["--part", c["part"], "--outputs-dir", str(outputs), "--tag", f"stress-{c['name']}",
                               *c["args"]]))
     events = [json.loads(l) for l in (ROOT / summary["trace"]).read_text().splitlines()]
-    end = next((e for e in reversed(events) if e["type"] == "session_end"), {})
+    end = next((e for e in reversed(events) if e["type"] == "session_state"), {})
     report = end.get("report") or {}
     truth = ground_truth(c["part"], c["parts_dir"], Constraints(c["constraints"]))
     expected = c.get("expect", truth["expected_status"])
