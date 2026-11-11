@@ -62,6 +62,17 @@ def _bounds(steps) -> tuple[float, float]:
     return min(ts), max(s.ts + (s.duration_ms or 0) / 1000 for s in steps if s.ts)
 
 
+def task_text(run: Run) -> str:
+    d = run.default_load or {}
+    cons = run.constraints or {}
+    limits = "; ".join(f"{k} {' '.join(f'{op} {v}' for op, v in r.items() if op in ('min', 'max'))}"
+                       for k, r in cons.items()) or "none stated"
+    return (f"Analyse {run.part}: apply the default load ({d.get('force_N')} N {d.get('direction')} on "
+            f"{d.get('face_id')}), run mesh → load → solve, report the safety factor. If SF < 2.0, find a "
+            f"single-parameter fix and verify it, or report that none exists. Parameters: {run.base_params}. "
+            f"Manufacturing constraints: {limits}.")
+
+
 def otlp_payload(run: Run, export_id: str, row: dict | None) -> tuple[dict, str, dict[int, str]]:
     trace_id, root_id = _hex(32, export_id), _hex(16, export_id, "root")
     ps = phases(run)
@@ -73,16 +84,21 @@ def otlp_payload(run: Run, export_id: str, row: dict | None) -> tuple[dict, str,
     tags = [f"status:{(run.report or {}).get('status')}", *([f"verdict:{row['verdict']}"] if row else []),
             *[f"failed:{n}" for n in (row or {}).get("failed", [])], run.harness]
     # Trace-level attributes go on every span (v4 filters/aggregates per observation).
-    trace_attrs = {"langfuse.trace.name": f"{run.part} · {(run.report or {}).get('status')}",
+    label = export_id.replace(run.part or "", "").strip("-_") or export_id   # e.g. "retry_loop", "...-bad-give_up_early"
+    verdict = f" · eval {row['verdict']}" if row else ""
+    trace_attrs = {"langfuse.trace.name": f"{run.part} · {(run.report or {}).get('status')}{verdict} · {label}",
                    "langfuse.session.id": run.part, "langfuse.trace.tags": tags}
     spans = [{"traceId": trace_id, "spanId": root_id, "name": f"{run.part}: {head}", "kind": 1,
               "startTimeUnixNano": _ns(t0), "endTimeUnixNano": _ns(t1),
               "attributes": _attrs({
                   **trace_attrs, "langfuse.observation.type": "agent",
-                  "langfuse.observation.input": {"task": f"analyse {run.part}", "default_load": run.default_load,
-                                                 "parameters": run.base_params, "constraints": run.constraints},
-                  "langfuse.observation.output": {"verdict": head, "report": run.report,
-                                                  "final_answer": why.get(-1), "run_level_findings": run_findings},
+                  # Plain text so the Sessions view shows the task / answer instead of "JSON only messages".
+                  "langfuse.observation.input": task_text(run),
+                  "langfuse.observation.output": f"{head}\n\n{why.get(-1) or (run.report or {}).get('reason', '')}",
+                  "langfuse.trace.metadata.task": {"default_load": run.default_load, "parameters": run.base_params,
+                                                   "constraints": run.constraints},
+                  "langfuse.trace.metadata.report": run.report,
+                  "langfuse.trace.metadata.run_level_findings": run_findings,
                   "langfuse.trace.metadata.run_id": run.run_id,
                   "langfuse.trace.metadata.oracle": run.oracle,
                   "langfuse.trace.metadata.usage": run.meta.get("usage"),

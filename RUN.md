@@ -64,6 +64,22 @@ No cheating found; all findings fixed (reduced-load "fixes", part swapping, game
 constraints lost in the foreign adapter, real part values in prompt examples, duplicated constants,
 if/elif chains replaced by tables in `agent/workflow.py` and `eval/narrate.py`).
 
+## Design choices (why)
+- **`claude -p` + an MCP tool server** instead of a custom loop: runs on a subscription (no API key) and
+  Claude Code's stream-json is a ready-made raw trace. Built-in tools are disabled, so the agent can only use
+  PartLab tools (no reading `parts/*.json`, no handbook, no solver log). Cost: budgets live in the tool server.
+- **Small tool surface, shaped results:** 12 tools; `solve` returns a summary (log dropped, 96% smaller);
+  every result is capped at 2 KB. Every call carries a short stated `why`, stripped before the CLI.
+- **Guards *and* an eval:** guards (constraints, single parameter, save/report preconditions) stop bad actions
+  live and give the agent a hint to self-correct; the eval judges traces independently, and `--no-guards` runs
+  prove it catches what the guards would have stopped.
+- **Trust observations, not claims:** the harness records SDK state after each step; an oracle re-solves every
+  saved part in a fresh session; a brute-force sweep gives ground truth for `no_fix_possible`.
+- **Severity model:** critical = correctness/honesty (wrong SF, unverified save, constraint broken, wrong
+  status) → any failure fails the run; major = process (order, retries, context, forbidden tools); minor =
+  efficiency. Score = severity-weighted pass fraction; all thresholds in `eval/config.toml`.
+- **Memory off by default** so graded runs are independent and reproducible; `--memory on` for learning.
+
 ## Layout
 `agent/` CLI client · tool layer (guards, shaping, budgets) · `workflow.py` (single workflow table) · MCP
 server · prompt · trace · memory · run harness
@@ -80,6 +96,9 @@ report · `narrate` (per-call timelines) · `flawed` · `learn` · `export_langf
 - Hard-coding scan catches identifiers, not prose (e.g. "thickness"); supervisor review covers prose.
 
 ## Optional: Langfuse viewer
+Sessions = one per part; each trace reads like a chat (task in, verdict + final answer out), with a tree of
+phases → tool calls (why (agent), why (context), args, result) and eval checks attached as scores, failures
+pinned to the exact call. Trace names carry status, eval verdict and run label (e.g. `… · eval FAIL · wrong_load`).
 Local stack in `~/dev/langfuse-local` (ports bound to 127.0.0.1, random secrets in `.env`, AI-gateway service
 removed for Compose 2.5). Export (Langfuse v4: OTLP traces + score API; Langfuse does not dedupe re-sent spans, so export each run once):
 `LANGFUSE_PUBLIC_KEY=… LANGFUSE_SECRET_KEY=… .venv/bin/python -m eval.export_langfuse traces/ eval/flawed/ eval/bad_traces/ --report eval/out/report.json --report eval/out_flawed/report.json --report eval/out_bad/report.json`
