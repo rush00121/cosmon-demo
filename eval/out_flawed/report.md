@@ -6,19 +6,19 @@
 
 | run | part | status | verdict | score | failed / issues |
 |---|---|---|---|---|---|
-| [`bracket_v3-20261111T121937-memoff`](runs/wrong_load.md) | bracket_v3 | fixed | FAIL | 0.688 | **default_load_used**, **claim_matches_observation**, **verified_after_change** |
-| [`flange_v1-20261111T121937-memoff`](runs/no_report.md) | flange_v1 | None | FAIL | 0.697 | **completed**, **status_correct** |
-| [`flange_v1-20261111T121937-memoff`](runs/constraint_violated.md) | flange_v1 | no_fix_possible | FAIL | 0.835 | **constraint_compliance**, infeasibility_evidence |
-| [`flange_v1-20261111T121937-memoff`](runs/gave_up_after_recovered_error.md) | flange_v1 | failed | FAIL | 0.848 | **status_correct** |
-| [`bracket_v3-20261111T121937-memoff`](runs/changed_after_verify.md) | bracket_v3 | fixed | FAIL | 0.88 | **verified_after_change**, workflow_order |
-| [`bracket_v3-20261111T121937-memoff`](runs/claimed_sf_not_observed.md) | bracket_v3 | fixed | FAIL | 0.896 | **claim_matches_observation** |
-| [`bracket_v3-20261111T121937-memoff`](runs/oracle_disagrees.md) | bracket_v3 | fixed | FAIL | 0.896 | **oracle_agrees** |
-| [`bracket_v3-20261111T121937-memoff`](runs/two_parameters.md) | bracket_v3 | fixed | FAIL | 0.896 | **single_parameter_change** |
-| [`bracket_v3-20261111T121937-memoff`](runs/forbidden_tool.md) | bracket_v3 | fixed | WARN | 0.969 | forbidden_tools |
-| [`bracket_v3-20261111T121937-memoff`](runs/out_of_order.md) | bracket_v3 | fixed | WARN | 0.969 | workflow_order |
-| [`bracket_v3-20261111T121937-memoff`](runs/retry_loop.md) | bracket_v3 | fixed | WARN | 0.969 | error_recovery |
-| [`bracket_v3-20261111T121937-memoff`](runs/state_diverged.md) | bracket_v3 | fixed | WARN | 0.969 | state_consistency |
-| [`bracket_v3-20261111T121937-memoff`](runs/unshaped_solve.md) | bracket_v3 | fixed | WARN | 0.969 | context_budget |
+| [`bracket_v3-20261111T123320-memoff`](runs/wrong_load.md) | bracket_v3 | fixed | FAIL | 0.688 | **default_load_used**, **claim_matches_observation**, **verified_after_change** |
+| [`flange_v1-20261111T123320-memoff`](runs/no_report.md) | flange_v1 | None | FAIL | 0.697 | **completed**, **status_correct** |
+| [`flange_v1-20261111T123320-memoff`](runs/constraint_violated.md) | flange_v1 | no_fix_possible | FAIL | 0.835 | **constraint_compliance**, infeasibility_evidence |
+| [`flange_v1-20261111T123320-memoff`](runs/gave_up_after_recovered_error.md) | flange_v1 | failed | FAIL | 0.848 | **status_correct** |
+| [`bracket_v3-20261111T123320-memoff`](runs/changed_after_verify.md) | bracket_v3 | fixed | FAIL | 0.88 | **verified_after_change**, workflow_order |
+| [`bracket_v3-20261111T123320-memoff`](runs/claimed_sf_not_observed.md) | bracket_v3 | fixed | FAIL | 0.896 | **claim_matches_observation** |
+| [`bracket_v3-20261111T123320-memoff`](runs/oracle_disagrees.md) | bracket_v3 | fixed | FAIL | 0.896 | **oracle_agrees** |
+| [`bracket_v3-20261111T123320-memoff`](runs/two_parameters.md) | bracket_v3 | fixed | FAIL | 0.896 | **single_parameter_change** |
+| [`bracket_v3-20261111T123320-memoff`](runs/forbidden_tool.md) | bracket_v3 | fixed | WARN | 0.969 | forbidden_tools |
+| [`bracket_v3-20261111T123320-memoff`](runs/out_of_order.md) | bracket_v3 | fixed | WARN | 0.969 | workflow_order |
+| [`bracket_v3-20261111T123320-memoff`](runs/retry_loop.md) | bracket_v3 | fixed | WARN | 0.969 | error_recovery |
+| [`bracket_v3-20261111T123320-memoff`](runs/state_diverged.md) | bracket_v3 | fixed | WARN | 0.969 | state_consistency |
+| [`bracket_v3-20261111T123320-memoff`](runs/unshaped_solve.md) | bracket_v3 | fixed | WARN | 0.969 | context_budget |
 
 ## Check pass rates
 
@@ -42,24 +42,24 @@
 
 ## Findings (what to look at)
 
-- `bracket_v3-20261111T121937-memoff` **verified_after_change** (critical, fail): parameters changed after the verifying solve — steps [26, 28, 27.5]
-- `bracket_v3-20261111T121937-memoff` **workflow_order** (major, warn): 1 out-of-phase call(s), recovered — steps [28]
-- `bracket_v3-20261111T121937-memoff` **claim_matches_observation** (critical, fail): final_sf 2.5 != verifying solve 2.198 — steps [26]
-- `flange_v1-20261111T121937-memoff` **constraint_compliance** (critical, fail): constraint-violating value reached the SDK [constraints from trace] — steps [12]
-- `flange_v1-20261111T121937-memoff` **infeasibility_evidence** (major, fail): declared infeasible without solving ['thickness_mm'] at an allowed bound
-- `bracket_v3-20261111T121937-memoff` **forbidden_tools** (major, fail): forbidden tool used — steps [27.5]
-- `flange_v1-20261111T121937-memoff` **status_correct** (critical, fail): reported failed, ground truth no_fix_possible
-- `flange_v1-20261111T121937-memoff` **completed** (critical, fail): no report_result was accepted
-- `flange_v1-20261111T121937-memoff` **status_correct** (critical, fail): reported None, ground truth no_fix_possible
-- `bracket_v3-20261111T121937-memoff` **oracle_agrees** (critical, fail): oracle problems: ['re-solved SF 1.43 < 2.0']
-- `bracket_v3-20261111T121937-memoff` **workflow_order** (major, fail): 2 calls made in an invalid phase — steps [5.5, 5.5]
-- `bracket_v3-20261111T121937-memoff` **error_recovery** (major, fail): identical failing call re-issued 2x — steps [27.5, 27.5]
-- `bracket_v3-20261111T121937-memoff` **state_consistency** (major, fail): SDK state diverged from replayed workflow — steps [6]
-- `bracket_v3-20261111T121937-memoff` **single_parameter_change** (critical, fail): 2 parameters changed: {'fillet_radius_mm': 2.1, 'thickness_mm': 4} — steps [28]
-- `bracket_v3-20261111T121937-memoff` **context_budget** (major, fail): results over 2000 B; 8292 B read by model (20664 B raw) — steps [10]
-- `bracket_v3-20261111T121937-memoff` **default_load_used** (critical, fail): non-default load applied (default {'face_id': 'face_mounting', 'force_N': 5000, 'direction': '-Z'}) — steps [8, 16, 24]
-- `bracket_v3-20261111T121937-memoff` **claim_matches_observation** (critical, fail): first solve is not a baseline (original parameters + default load) — steps [10]
-- `bracket_v3-20261111T121937-memoff` **verified_after_change** (critical, fail): verifying solve did not use the default load — steps [26, 28]
+- `bracket_v3-20261111T123320-memoff` **verified_after_change** (critical, fail): parameters changed after the verifying solve — steps [26, 28, 27.5]
+- `bracket_v3-20261111T123320-memoff` **workflow_order** (major, warn): 1 out-of-phase call(s), recovered — steps [28]
+- `bracket_v3-20261111T123320-memoff` **claim_matches_observation** (critical, fail): final_sf 2.5 != verifying solve 2.198 — steps [26]
+- `flange_v1-20261111T123320-memoff` **constraint_compliance** (critical, fail): constraint-violating value reached the SDK [constraints from trace] — steps [12]
+- `flange_v1-20261111T123320-memoff` **infeasibility_evidence** (major, fail): declared infeasible without solving ['thickness_mm'] at an allowed bound
+- `bracket_v3-20261111T123320-memoff` **forbidden_tools** (major, fail): forbidden tool used — steps [27.5]
+- `flange_v1-20261111T123320-memoff` **status_correct** (critical, fail): reported failed, ground truth no_fix_possible
+- `flange_v1-20261111T123320-memoff` **completed** (critical, fail): no report_result was accepted
+- `flange_v1-20261111T123320-memoff` **status_correct** (critical, fail): reported None, ground truth no_fix_possible
+- `bracket_v3-20261111T123320-memoff` **oracle_agrees** (critical, fail): oracle problems: ['re-solved SF 1.43 < 2.0']
+- `bracket_v3-20261111T123320-memoff` **workflow_order** (major, fail): 2 calls made in an invalid phase — steps [5.5, 5.5]
+- `bracket_v3-20261111T123320-memoff` **error_recovery** (major, fail): identical failing call re-issued 2x — steps [27.5, 27.5]
+- `bracket_v3-20261111T123320-memoff` **state_consistency** (major, fail): SDK state diverged from replayed workflow — steps [6]
+- `bracket_v3-20261111T123320-memoff` **single_parameter_change** (critical, fail): 2 parameters changed: {'fillet_radius_mm': 2.1, 'thickness_mm': 4} — steps [28]
+- `bracket_v3-20261111T123320-memoff` **context_budget** (major, fail): results over 2000 B; 8292 B read by model (20664 B raw) — steps [10]
+- `bracket_v3-20261111T123320-memoff` **default_load_used** (critical, fail): non-default load applied (default {'face_id': 'face_mounting', 'force_N': 5000, 'direction': '-Z'}) — steps [8, 16, 24]
+- `bracket_v3-20261111T123320-memoff` **claim_matches_observation** (critical, fail): first solve is not a baseline (original parameters + default load) — steps [10]
+- `bracket_v3-20261111T123320-memoff` **verified_after_change** (critical, fail): verifying solve did not use the default load — steps [26, 28]
 
 ## Pass rate by group
 

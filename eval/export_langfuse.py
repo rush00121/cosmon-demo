@@ -1,11 +1,13 @@
 """Optional viewer: push runs to Langfuse as readable stories. Files stay the source of truth.
 
-Each run becomes: trace (input = task + constraints, output = one-line verdict + final answer)
-  -> phase spans ("3. trial thickness_mm: 3 → 4 — SF 2.198 ✓ meets target")
-     -> step spans ("solve → SF 2.198", errors as ERROR level, agent rationale in metadata)
+Each run becomes: agent root span (input = task + constraints, output = one-line verdict + final answer)
+  -> chain spans per phase ("3. trial <param>: <old> → <new> — SF <x> ✓ meets target")
+     -> tool spans per call ("solve → SF <x>"; input = why (agent) / why (context) / args; errors at ERROR)
 Eval checks become trace scores; a failing check is also scored on the exact step it cites, so it shows up
 on that step in the UI. Langfuse v4 ingests traces only via OTLP (/api/public/otel/v1/traces); scores via
-/api/public/scores. Stdlib only; ids derived from the trace dir name, so re-exporting updates in place.
+/api/public/scores. Stdlib only. Per the v4 OTel guide, trace-level attributes (session, trace name, tags) are propagated to every
+span and the ingestion-version header is sent. Span ids are derived from the trace dir name, but Langfuse does
+NOT dedupe re-sent spans: export each run once (clear the project before a full re-export).
 Usage: LANGFUSE_HOST=http://127.0.0.1:3000 LANGFUSE_PUBLIC_KEY=pk-lf-... LANGFUSE_SECRET_KEY=sk-lf-... \
        .venv/bin/python -m eval.export_langfuse traces/ [--report eval/out/report.json ...]
 """
@@ -70,15 +72,17 @@ def otlp_payload(run: Run, export_id: str, row: dict | None) -> tuple[dict, str,
     head = headline(run, row)
     tags = [f"status:{(run.report or {}).get('status')}", *([f"verdict:{row['verdict']}"] if row else []),
             *[f"failed:{n}" for n in (row or {}).get("failed", [])], run.harness]
+    # Trace-level attributes go on every span (v4 filters/aggregates per observation).
+    trace_attrs = {"langfuse.trace.name": f"{run.part} · {(run.report or {}).get('status')}",
+                   "langfuse.session.id": run.part, "langfuse.trace.tags": tags}
     spans = [{"traceId": trace_id, "spanId": root_id, "name": f"{run.part}: {head}", "kind": 1,
               "startTimeUnixNano": _ns(t0), "endTimeUnixNano": _ns(t1),
               "attributes": _attrs({
-                  "langfuse.trace.name": f"{run.part} · {(run.report or {}).get('status')}",
-                  "langfuse.session.id": run.part, "langfuse.trace.tags": tags,
-                  "langfuse.trace.input": {"task": f"analyse {run.part}", "default_load": run.default_load,
-                                           "parameters": run.base_params, "constraints": run.constraints},
-                  "langfuse.trace.output": {"verdict": head, "report": run.report, "final_answer": why.get(-1),
-                                            "run_level_findings": run_findings},
+                  **trace_attrs, "langfuse.observation.type": "agent",
+                  "langfuse.observation.input": {"task": f"analyse {run.part}", "default_load": run.default_load,
+                                                 "parameters": run.base_params, "constraints": run.constraints},
+                  "langfuse.observation.output": {"verdict": head, "report": run.report,
+                                                  "final_answer": why.get(-1), "run_level_findings": run_findings},
                   "langfuse.trace.metadata.run_id": run.run_id,
                   "langfuse.trace.metadata.oracle": run.oracle,
                   "langfuse.trace.metadata.usage": run.meta.get("usage"),
@@ -93,6 +97,7 @@ def otlp_payload(run: Run, export_id: str, row: dict | None) -> tuple[dict, str,
                       "startTimeUnixNano": _ns(ps0), "endTimeUnixNano": _ns(ps1),
                       "status": {"code": 2 if bad else 1},
                       "attributes": _attrs({
+                          **trace_attrs, "langfuse.observation.type": "chain",
                           "langfuse.observation.level": "ERROR" if bad else "WARNING" if p.findings else "DEFAULT",
                           "langfuse.observation.status_message": "; ".join(
                               f"{f['check']}: {f['message']}" for f in p.findings),
@@ -108,6 +113,7 @@ def otlp_payload(run: Run, export_id: str, row: dict | None) -> tuple[dict, str,
                           "endTimeUnixNano": _ns(start + (s.duration_ms or 0) / 1000),
                           "status": {"code": 1 if s.ok else 2, "message": s.error_type or ""},
                           "attributes": _attrs({
+                              **trace_attrs, "langfuse.observation.type": "tool",
                               "langfuse.observation.input": {"why (agent)": s.why or why.get(s.seq),
                                                              "why (context)": derived.get(s.seq),
                                                              "args": s.args},
@@ -146,7 +152,8 @@ def scores_for(trace_id: str, export_id: str, row: dict, step_span: dict[int, st
 
 def post(host: str, path: str, auth: str, body: dict) -> dict:
     req = urllib.request.Request(f"{host.rstrip('/')}{path}", data=json.dumps(body, default=str).encode(),
-                                 headers={"Content-Type": "application/json", "Authorization": auth})
+                                 headers={"Content-Type": "application/json", "Authorization": auth,
+                                          "x-langfuse-ingestion-version": "4"})
     with urllib.request.urlopen(req, timeout=30) as resp:
         return json.loads(resp.read() or b"{}")
 

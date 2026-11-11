@@ -1,3 +1,6 @@
+> **Historical:** the original pre-build plan (v2, after the 3-critic review), kept to show the process.
+> The final design and results are in [RUN.md](../RUN.md); later changes (per-call intent, `agent/workflow.py`, scale tests, bad-agent evals, Langfuse OTLP) are not reflected here.
+
 # PartLab Agent — Plan v2 (after 3-critic adversarial review)
 
 ## Known facts (smoke test + part files)

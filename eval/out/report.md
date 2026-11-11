@@ -6,8 +6,8 @@
 
 | run | part | status | verdict | score | failed / issues |
 |---|---|---|---|---|---|
-| [`bracket_v3-20261111T121937-memoff`](runs/bracket_v3-20261111T121937-memoff.md) | bracket_v3 | fixed | PASS | 1.0 | — |
-| [`flange_v1-20261111T121937-memoff`](runs/flange_v1-20261111T121937-memoff.md) | flange_v1 | no_fix_possible | PASS | 1.0 | — |
+| [`bracket_v3-20261111T123320-memoff`](runs/bracket_v3-20261111T123320-memoff.md) | bracket_v3 | fixed | PASS | 1.0 | — |
+| [`flange_v1-20261111T123320-memoff`](runs/flange_v1-20261111T123320-memoff.md) | flange_v1 | no_fix_possible | PASS | 1.0 | — |
 
 ## Check pass rates
 

@@ -15,7 +15,7 @@ from pathlib import Path
 from .constraints import Constraints
 from .memory import LessonStore
 from .partlab_client import ROOT, Envelope, PartLab
-from .workflow import MUTATING, SENSIBLE_RANGE, SF_TARGET, SF_TOL  # noqa: F401 (re-exported)
+from .workflow import SF_TARGET, SF_TOL
 
 MAX_RESULT_BYTES = 2000
 # Commands whose side effects change SDK state; the harness snapshots phase after these.

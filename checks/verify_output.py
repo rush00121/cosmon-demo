@@ -12,7 +12,7 @@ from pathlib import Path
 
 from agent.constraints import Constraints
 from agent.partlab_client import DEFAULT_PARTS, PartLab, make_workdir
-from agent.tools import SF_TARGET, SF_TOL
+from agent.workflow import SF_TARGET, SF_TOL
 
 
 def verify(saved_path: Path, constraints: Constraints | None = None, parts_dir: Path = DEFAULT_PARTS) -> dict:

@@ -124,7 +124,6 @@ def gave_up_after_recovered_error(ev):
 
 def two_parameters(ev):
     """A second parameter is changed in the same trial, so the saved 'fix' changes two parameters."""
-    constraints = next(e for e in ev if e["type"] == "run_start")["constraints"] or {}
     opened = next(e for e in ev if e["type"] == "tool_result" and e["tool"] == "open_part")
     first_set = next(e for e in ev if e["type"] == "tool_call" and e["tool"] == "set_parameter")
     other = next(k for k in opened["shaped"]["result"]["parameters"] if k != first_set["args"]["name"])

@@ -19,8 +19,9 @@ from mcp.server.stdio import stdio_server
 from .constraints import Constraints
 from .memory import LessonStore
 from .partlab_client import PartLab
-from .tools import MUTATING, SCHEMAS, PartLabTools
+from .tools import SCHEMAS, PartLabTools
 from .trace import Tracer
+from .workflow import MUTATING
 
 
 def build() -> tuple[PartLabTools, Tracer]:
