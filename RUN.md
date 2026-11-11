@@ -34,7 +34,7 @@ Memory is off by default for clean, independent runs; `--memory on` enables reca
 call: *why (agent)* (intent stated with the call), *why (context)* (derived from workflow state), result, and
 any eval finding pinned to that call. Same structure in Langfuse.
 
-**Bad traces are caught** (`eval/out_flawed/report.md`, `eval/out_bad/report.md`):
+**Bad traces are caught** (`eval/out_flawed/report.md`, `eval/out_bad/report.md`; generate with `--ground-truth`):
 - 13/13 edited traces fail *exactly* their expected checks (hallucinated SF, change after verify, constraint
   violation, forbidden tool, unshaped log, reduced load, two parameters, no report, retry loop, out-of-order
   calls, oracle disagreement, SDK state divergence, giving up after a recovered error) — exact sets, so a check

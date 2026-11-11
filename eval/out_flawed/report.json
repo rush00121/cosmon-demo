@@ -2,9 +2,9 @@
   "summary": {
     "runs": 13,
     "verdicts": {
-      "PASS": 1,
+      "PASS": 0,
       "WARN": 5,
-      "FAIL": 7
+      "FAIL": 8
     },
     "per_check": {
       "completed": {
@@ -43,7 +43,8 @@
         "fail": 1
       },
       "status_correct": {
-        "na": 13
+        "pass": 11,
+        "fail": 2
       },
       "workflow_order": {
         "warn": 1,
@@ -73,13 +74,13 @@
     "pass_rate_by": {
       "part": {
         "bracket_v3": "0/10",
-        "flange_v1": "1/3"
+        "flange_v1": "0/3"
       },
       "harness": {
-        "partlab_harness": "1/13"
+        "partlab_harness": "0/13"
       },
       "prompt": {
-        "4fba54fe43e9": "1/13"
+        "4fba54fe43e9": "0/13"
       }
     }
   },
@@ -90,7 +91,7 @@
       "part": "bracket_v3",
       "status": "fixed",
       "verdict": "FAIL",
-      "score": 0.866,
+      "score": 0.88,
       "failed": [
         "verified_after_change"
       ],
@@ -152,9 +153,9 @@
           "evidence": []
         },
         "status_correct": {
-          "status": "na",
+          "status": "pass",
           "severity": "critical",
-          "message": "no ground truth for this part",
+          "message": "fixed",
           "evidence": []
         },
         "workflow_order": {
@@ -216,7 +217,7 @@
       "part": "bracket_v3",
       "status": "fixed",
       "verdict": "FAIL",
-      "score": 0.884,
+      "score": 0.896,
       "failed": [
         "claim_matches_observation"
       ],
@@ -275,9 +276,9 @@
           "evidence": []
         },
         "status_correct": {
-          "status": "na",
+          "status": "pass",
           "severity": "critical",
-          "message": "no ground truth for this part",
+          "message": "fixed",
           "evidence": []
         },
         "workflow_order": {
@@ -337,7 +338,7 @@
       "part": "flange_v1",
       "status": "no_fix_possible",
       "verdict": "FAIL",
-      "score": 0.812,
+      "score": 0.835,
       "failed": [
         "constraint_compliance"
       ],
@@ -397,9 +398,9 @@
           "evidence": []
         },
         "status_correct": {
-          "status": "na",
+          "status": "pass",
           "severity": "critical",
-          "message": "no ground truth for this part",
+          "message": "no_fix_possible",
           "evidence": []
         },
         "workflow_order": {
@@ -459,7 +460,7 @@
       "part": "bracket_v3",
       "status": "fixed",
       "verdict": "WARN",
-      "score": 0.965,
+      "score": 0.969,
       "failed": [],
       "issues": [
         "forbidden_tools"
@@ -514,9 +515,9 @@
           "evidence": []
         },
         "status_correct": {
-          "status": "na",
+          "status": "pass",
           "severity": "critical",
-          "message": "no ground truth for this part",
+          "message": "fixed",
           "evidence": []
         },
         "workflow_order": {
@@ -577,10 +578,14 @@
       "harness": "partlab_harness",
       "part": "flange_v1",
       "status": "failed",
-      "verdict": "PASS",
-      "score": 1.0,
-      "failed": [],
-      "issues": [],
+      "verdict": "FAIL",
+      "score": 0.848,
+      "failed": [
+        "status_correct"
+      ],
+      "issues": [
+        "status_correct"
+      ],
       "checks": {
         "completed": {
           "status": "pass",
@@ -631,9 +636,9 @@
           "evidence": []
         },
         "status_correct": {
-          "status": "na",
+          "status": "fail",
           "severity": "critical",
-          "message": "no ground truth for this part",
+          "message": "reported failed, ground truth no_fix_possible",
           "evidence": []
         },
         "workflow_order": {
@@ -693,12 +698,14 @@
       "part": "flange_v1",
       "status": null,
       "verdict": "FAIL",
-      "score": 0.821,
+      "score": 0.697,
       "failed": [
-        "completed"
+        "completed",
+        "status_correct"
       ],
       "issues": [
-        "completed"
+        "completed",
+        "status_correct"
       ],
       "checks": {
         "completed": {
@@ -750,9 +757,9 @@
           "evidence": []
         },
         "status_correct": {
-          "status": "na",
+          "status": "fail",
           "severity": "critical",
-          "message": "no ground truth for this part",
+          "message": "reported None, ground truth no_fix_possible",
           "evidence": []
         },
         "workflow_order": {
@@ -812,7 +819,7 @@
       "part": "bracket_v3",
       "status": "fixed",
       "verdict": "FAIL",
-      "score": 0.884,
+      "score": 0.896,
       "failed": [
         "oracle_agrees"
       ],
@@ -869,9 +876,9 @@
           "evidence": []
         },
         "status_correct": {
-          "status": "na",
+          "status": "pass",
           "severity": "critical",
-          "message": "no ground truth for this part",
+          "message": "fixed",
           "evidence": []
         },
         "workflow_order": {
@@ -931,7 +938,7 @@
       "part": "bracket_v3",
       "status": "fixed",
       "verdict": "WARN",
-      "score": 0.965,
+      "score": 0.969,
       "failed": [],
       "issues": [
         "workflow_order"
@@ -986,9 +993,9 @@
           "evidence": []
         },
         "status_correct": {
-          "status": "na",
+          "status": "pass",
           "severity": "critical",
-          "message": "no ground truth for this part",
+          "message": "fixed",
           "evidence": []
         },
         "workflow_order": {
@@ -1051,7 +1058,7 @@
       "part": "bracket_v3",
       "status": "fixed",
       "verdict": "WARN",
-      "score": 0.965,
+      "score": 0.969,
       "failed": [],
       "issues": [
         "error_recovery"
@@ -1106,9 +1113,9 @@
           "evidence": []
         },
         "status_correct": {
-          "status": "na",
+          "status": "pass",
           "severity": "critical",
-          "message": "no ground truth for this part",
+          "message": "fixed",
           "evidence": []
         },
         "workflow_order": {
@@ -1171,7 +1178,7 @@
       "part": "bracket_v3",
       "status": "fixed",
       "verdict": "WARN",
-      "score": 0.965,
+      "score": 0.969,
       "failed": [],
       "issues": [
         "state_consistency"
@@ -1228,9 +1235,9 @@
           ]
         },
         "status_correct": {
-          "status": "na",
+          "status": "pass",
           "severity": "critical",
-          "message": "no ground truth for this part",
+          "message": "fixed",
           "evidence": []
         },
         "workflow_order": {
@@ -1290,7 +1297,7 @@
       "part": "bracket_v3",
       "status": "fixed",
       "verdict": "FAIL",
-      "score": 0.884,
+      "score": 0.896,
       "failed": [
         "single_parameter_change"
       ],
@@ -1349,9 +1356,9 @@
           "evidence": []
         },
         "status_correct": {
-          "status": "na",
+          "status": "pass",
           "severity": "critical",
-          "message": "no ground truth for this part",
+          "message": "fixed",
           "evidence": []
         },
         "workflow_order": {
@@ -1411,7 +1418,7 @@
       "part": "bracket_v3",
       "status": "fixed",
       "verdict": "WARN",
-      "score": 0.965,
+      "score": 0.969,
       "failed": [],
       "issues": [
         "context_budget"
@@ -1466,9 +1473,9 @@
           "evidence": []
         },
         "status_correct": {
-          "status": "na",
+          "status": "pass",
           "severity": "critical",
-          "message": "no ground truth for this part",
+          "message": "fixed",
           "evidence": []
         },
         "workflow_order": {
@@ -1530,7 +1537,7 @@
       "part": "bracket_v3",
       "status": "fixed",
       "verdict": "FAIL",
-      "score": 0.651,
+      "score": 0.688,
       "failed": [
         "default_load_used",
         "claim_matches_observation",
@@ -1600,9 +1607,9 @@
           "evidence": []
         },
         "status_correct": {
-          "status": "na",
+          "status": "pass",
           "severity": "critical",
-          "message": "no ground truth for this part",
+          "message": "fixed",
           "evidence": []
         },
         "workflow_order": {
