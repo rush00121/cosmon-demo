@@ -36,7 +36,7 @@ def verify(saved_path: Path, constraints: Constraints | None = None, parts_dir: 
             if not env.ok:
                 return {**out, "problems": [f"{step[0]} failed: {env.error}"]}
         sf = env.result["safety_factor"]
-    claimed = saved.get("solve_result", {}).get("safety_factor")
+    claimed = (saved.get("solve_result") or {}).get("safety_factor")  # None if saved without a solve
     out.update(resolved_sf=sf, claimed_sf=claimed, changed=changed)
     p = out["problems"]
     if sf < SF_TARGET:

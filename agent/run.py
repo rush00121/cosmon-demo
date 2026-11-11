@@ -42,6 +42,7 @@ def parse_args(argv=None):
     p.add_argument("--max-calls", type=int, default=60)
     p.add_argument("--timeout-s", type=int, default=600)
     p.add_argument("--tag", default="")
+    p.add_argument("--prompt-suffix", default="", help="TEST ONLY: appended to the system prompt (bad-agent evals)")
     p.add_argument("--trace-root", type=Path, default=ROOT / "traces")
     a = p.parse_args(argv)
     a.constraints = [c.resolve() for c in (a.constraints or [DEFAULT_CONSTRAINTS])]
@@ -57,14 +58,15 @@ def run(a) -> dict:
     if saved.exists():  # a stale file from an earlier run must not count as this run's output
         saved.unlink()
 
+    system_prompt = SYSTEM_PROMPT + (f"\n\n{a.prompt_suffix}" if a.prompt_suffix else "")
     tracer = Tracer(harness_path, run_id)
-    tracer.emit("run_start", part=a.part, backend="claude_cli", model=a.model, memory=a.memory,
+    tracer.emit("run_start", prompt_suffix=a.prompt_suffix or None, part=a.part, backend="claude_cli", model=a.model, memory=a.memory,
                 guards=not a.no_guards, faults=a.faults, parts_dir=str(a.parts_dir),
                 constraints=Constraints(*a.constraints).for_part(a.part),
                 constraint_sources=[str(c) for c in a.constraints],
                 budgets={"max_solves": a.max_solves, "max_calls": a.max_calls},
-                tools=sorted(SCHEMAS), system_prompt=SYSTEM_PROMPT,
-                system_prompt_sha=hashlib.sha256(SYSTEM_PROMPT.encode()).hexdigest()[:12])
+                tools=sorted(SCHEMAS), system_prompt=system_prompt,
+                system_prompt_sha=hashlib.sha256(system_prompt.encode()).hexdigest()[:12])
     tracer.close()
 
     server_env = {
@@ -79,7 +81,7 @@ def run(a) -> dict:
     mcp_cfg.write_text(json.dumps({"mcpServers": {"partlab": {
         "command": str(PYTHON), "args": ["-m", "agent.mcp_server"], "env": server_env}}}))
 
-    cmd = ["claude", "-p", user_prompt(a.part), "--system-prompt", SYSTEM_PROMPT,
+    cmd = ["claude", "-p", user_prompt(a.part), "--system-prompt", system_prompt,
            "--mcp-config", str(mcp_cfg), "--strict-mcp-config",
            "--tools", "",                              # no built-in tools: no Bash/Read -> no parts/*.json
            "--allowedTools", "mcp__partlab",           # only our MCP tools, pre-approved

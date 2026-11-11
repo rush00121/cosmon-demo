@@ -1,0 +1,33 @@
+{
+  "tier": "llm (real claude -p agents)",
+  "parts": 30,
+  "jobs": 10,
+  "agent_wall_s": 65.9,
+  "runs_per_min": 27.3,
+  "run_latency_s": {
+    "p50": 19.7,
+    "p95": 29.7,
+    "max": 34.9,
+    "mean": 19.88
+  },
+  "failed_runs": [],
+  "rate_limited_runs": 0,
+  "five_hour_utilization": {
+    "min": 0.44,
+    "max": 0.53
+  },
+  "total_cost_usd_equiv": 1.005,
+  "turns": {
+    "p50": 13,
+    "p95": 17,
+    "max": 22,
+    "mean": 12.33
+  },
+  "eval_wall_s": 6.6,
+  "verdicts": {
+    "PASS": 30,
+    "WARN": 0,
+    "FAIL": 0
+  },
+  "per_check_fail": {}
+}

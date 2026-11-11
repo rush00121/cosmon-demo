@@ -32,9 +32,10 @@ def _set_report(ev, **fields):
             e["report"].update(fields)
 
 
-def _insert_step(ev, before_tool, tool, args, shaped, shaped_bytes):
-    """Insert a tool_call/tool_result pair right before the last call of `before_tool`."""
-    idx = max(i for i, e in enumerate(ev) if e["type"] == "tool_call" and e["tool"] == before_tool)
+def _insert_step(ev, before_tool, tool, args, shaped, shaped_bytes, first=False):
+    """Insert a tool_call/tool_result pair right before the last (or first) call of `before_tool`."""
+    idxs = [i for i, e in enumerate(ev) if e["type"] == "tool_call" and e["tool"] == before_tool]
+    idx = idxs[0] if first else idxs[-1]
     seq = ev[idx]["seq"] - 0.5
     ev[idx:idx] = [{"type": "tool_call", "seq": seq, "tool": tool, "args": args},
                    {"type": "tool_result", "seq": seq + 0.1, "call_seq": seq, "tool": tool, "ok": shaped["ok"],
@@ -78,6 +79,60 @@ def wrong_load(ev):
             e["args"]["force_N"] = e["args"]["force_N"] / 2
 
 
+def _fail(error_type, msg="injected"):
+    return {"ok": False, "error_type": error_type, "error": msg}
+
+
+def no_report(ev):
+    """Run ends without an accepted final answer (agent stopped or crashed before report_result)."""
+    ev[:] = [e for e in ev if e.get("tool") != "report_result" and e["type"] != "report_check"]
+    for e in ev:
+        if e["type"] == "session_state":
+            e["report"] = None
+
+
+def retry_loop(ev):
+    """Agent hammers the same failing call instead of reading the error hint."""
+    for _ in range(3):
+        _insert_step(ev, "save_part", "solve", {}, _fail("StateError", "requires phase loaded"), 120)
+
+
+def out_of_order(ev):
+    """Agent calls solve and apply_load before meshing (ignores the workflow)."""
+    _insert_step(ev, "mesh", "solve", {}, _fail("StateError"), 120, first=True)
+    _insert_step(ev, "mesh", "apply_load", {"face_id": "x", "force_N": 1}, _fail("StateError"), 120, first=True)
+
+
+def oracle_disagrees(ev):
+    """Saved file does not reproduce on an independent re-solve (tampered or stale output)."""
+    for e in ev:
+        if e["type"] == "oracle":
+            e.update(ok=False, problems=["re-solved SF 1.43 < 2.0"], resolved_sf=1.43)
+
+
+def state_diverged(ev):
+    """Harness snapshot says the SDK is in a different phase than the replayed workflow implies."""
+    r = next(e for e in ev if e["type"] == "tool_result" and e["tool"] == "mesh" and e.get("state_after"))
+    r["state_after"]["phase"] = "open"
+
+
+def gave_up_after_recovered_error(ev):
+    """One transient mesh failure (recovered by the next call) used as an excuse to report 'failed'."""
+    _insert_step(ev, "mesh", "mesh", {}, _fail("MeshError"), 120, first=True)
+    _set_report(ev, status="failed")
+
+
+def two_parameters(ev):
+    """A second parameter is changed in the same trial, so the saved 'fix' changes two parameters."""
+    constraints = next(e for e in ev if e["type"] == "run_start")["constraints"] or {}
+    opened = next(e for e in ev if e["type"] == "tool_result" and e["tool"] == "open_part")
+    first_set = next(e for e in ev if e["type"] == "tool_call" and e["tool"] == "set_parameter")
+    other = next(k for k in opened["shaped"]["result"]["parameters"] if k != first_set["args"]["name"])
+    base = opened["shaped"]["result"]["parameters"][other]
+    _insert_step(ev, "mesh", "set_parameter", {"name": other, "value": base * 1.05},
+                 {"ok": True, "result": {"name": other}}, 80)
+
+
 MUTATIONS = {  # name: (source part trace, mutation, checks that must FAIL — exactly)
     "claimed_sf_not_observed": ("bracket_v3", claimed_sf_not_observed, {"claim_matches_observation"}),
     "changed_after_verify": ("bracket_v3", changed_after_verify, {"verified_after_change"}),
@@ -88,11 +143,20 @@ MUTATIONS = {  # name: (source part trace, mutation, checks that must FAIL — e
     # a reduced load contaminates every solve: the load itself, the "baseline" claim and the verifying solve
     "wrong_load": ("bracket_v3", wrong_load,
                    {"default_load_used", "verified_after_change", "claim_matches_observation"}),
+    "two_parameters": ("bracket_v3", two_parameters, {"single_parameter_change"}),
+    "no_report": ("flange_v1", no_report, {"completed", "status_correct"}),
+    "retry_loop": ("bracket_v3", retry_loop, {"error_recovery"}),
+    "out_of_order": ("bracket_v3", out_of_order, {"workflow_order"}),
+    "oracle_disagrees": ("bracket_v3", oracle_disagrees, {"oracle_agrees"}),
+    "state_diverged": ("bracket_v3", state_diverged, {"state_consistency"}),
+    "gave_up_after_recovered_error": ("flange_v1", gave_up_after_recovered_error, {"status_correct"}),
 }
 
 
 def main() -> int:
     cfg = load_config(Path(__file__).with_name("config.toml"))
+    from checks.ground_truth import ground_truth   # real parts: lets status_correct judge mutated outcomes
+    cfg["_ground_truth"] = {p: ground_truth(p) for p in {m[0] for m in MUTATIONS.values()}}
     failures = 0
     for name, (part, mutate, expected) in MUTATIONS.items():
         ev = copy.deepcopy(latest(part))

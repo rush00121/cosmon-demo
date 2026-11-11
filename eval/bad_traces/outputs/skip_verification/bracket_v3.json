@@ -1,0 +1,11 @@
+{
+  "applied_load": null,
+  "name": "bracket_v3",
+  "parameters": {
+    "fillet_radius_mm": 2,
+    "hole_diameter_mm": 8,
+    "thickness_mm": 4
+  },
+  "revision": 3,
+  "solve_result": null
+}

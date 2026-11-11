@@ -9,58 +9,75 @@
 ## From a clean reset
 ```bash
 ./partlab reset
+.venv/bin/python -m checks.check_no_hardcoding       # no part names / parameter names / results in logic
 .venv/bin/python -m checks.check_nonhappy            # 11 deterministic non-happy-path checks (no LLM)
-.venv/bin/python -m checks.check_no_hardcoding       # no part names / observed results in agent+eval logic
 .venv/bin/python -m agent.run --part bracket_v3      # -> traces/<run_id>/, outputs/bracket_v3.json
 .venv/bin/python -m agent.run --part flange_v1
 .venv/bin/python -m checks.verify_output outputs/*.json   # oracle: independent re-solve of saved parts
-.venv/bin/python -m eval.run_eval traces/ --ground-truth  # -> eval/out/report.{md,json}
-.venv/bin/python -m eval.flawed                      # deliberately flawed traces must fail exactly their check
-.venv/bin/python -m checks.stress --seed 7           # optional: 10 more agent runs (unnamed/synthetic/faults)
+.venv/bin/python -m eval.run_eval traces/ --ground-truth  # -> eval/out/report.md + eval/out/runs/<run>.md
+.venv/bin/python -m eval.flawed                      # 13 edited traces must fail exactly their checks
+.venv/bin/python -m checks.bad_agents                # 3 real sabotaged agents must be caught (~1% quota)
+.venv/bin/python -m checks.scale infra --parts 1000 --jobs 6   # scale, scripted policy, no LLM
+.venv/bin/python -m checks.scale llm --parts 30 --jobs 10      # scale, real agents (~10% of 5h window)
 ```
 Each run is isolated in `runs/<run_id>/` (own `.partlab/` session), so runs never share SDK state.
+Memory is off by default for clean, independent runs; `--memory on` enables recall/record of lessons
+(`memory/lessons.jsonl`), and `eval.learn` turns eval findings into lessons.
 
 ## Results (this submission)
 | part | outcome | verified by |
 |---|---|---|
 | bracket_v3 | baseline SF 1.428 → `thickness_mm` 3 → 4, SF 2.198, saved `outputs/bracket_v3.json` | oracle re-solve 2.198; eval PASS |
-| flange_v1 | baseline SF 0.212; best within constraints: thickness 5.0 → 0.839, hole 4.0 → 0.354, fillet no effect → **no_fix_possible**, nothing saved | brute-force sweep agrees; eval PASS |
+| flange_v1 | baseline SF 0.212; thickness at 5.0 max → 0.839, hole at 4.0 min → 0.354, fillet no effect → **no_fix_possible**, nothing saved | brute-force sweep agrees; eval PASS |
 
-- Non-happy checks: 11/11 PROVED (constraint guard, injected/layered constraints, invalid transition, CLI usage
-  error, save without passing SF, wrong part, reduced load, second parameter, fabricated report, injected faults,
-  budget). **What they prove:** every failure becomes a structured tool error with a hint, a constraint-violating
-  or unverified change can never reach the SDK or `outputs/`, and a false report is rejected live.
-- Stress (seed 7): un-named parts (housing_v1, bracket_v3_thick, stale bracket_v1), 4 synthetic renamed/perturbed
-  parts (2 with injected constraints), injected mesh failure + solve timeout, 1-solve budget → all statuses match
-  brute-force ground truth; budget run ends in an honest `failed` (eval WARN).
-- Eval: 12 memory-off runs → 11 PASS, 1 WARN (budget). Flawed traces: 6/6 flagged exactly
-  (`eval/flawed/*`: hallucinated SF, change after verify, constraint violation, forbidden tool, unshaped solve log,
-  reduced load); expected failing sets are exact, so a check that fires on everything cannot pass.
-- Supervision: two independent supervisor-agent audits (code; then eval + traces). No cheating found; 15 loopholes
-  fixed (e.g. reduced-load "fixes", part swapping, recovered-error-then-give-up WARN, constraints lost in the
-  foreign adapter). The eval itself was corrected once by a real trace: `synth7_0` probed the SDK's mesher limit
-  (hole ≥ 2.0) rather than the nominal bound — now counted as an effective bound when a further value is rejected.
-- Learning: `memory/lessons.jsonl` (git). Memory-on demo: run 2 recalled run 1's lesson → 2 solves instead of 3,
-  still verified by solve (`traces/*memon-demo*`).
+**Reading a run:** `eval/out/runs/<run>.md` — headline verdict, phases with outcomes, and one row per tool
+call: *why (agent)* (intent stated with the call), *why (context)* (derived from workflow state), result, and
+any eval finding pinned to that call. Same structure in Langfuse.
+
+**Bad traces are caught** (`eval/out_flawed/report.md`, `eval/out_bad/report.md`):
+- 13/13 edited traces fail *exactly* their expected checks (hallucinated SF, change after verify, constraint
+  violation, forbidden tool, unshaped log, reduced load, two parameters, no report, retry loop, out-of-order
+  calls, oracle disagreement, SDK state divergence, giving up after a recovered error) — exact sets, so a check
+  that fires on everything cannot pass.
+- 3/3 real sabotaged agents (guards off) caught with step-level evidence: skip verification (saved unverified,
+  claimed SF 2.5 vs observed 1.428), ignore constraints (thickness 9 > 5.0 max), give up early (no probes;
+  ground truth says fixable). This test also caught an oracle crash on saves without a solve (fixed).
+
+**Non-happy checks:** 11/11 PROVED — every failure becomes a structured tool error with a hint; a
+constraint-violating or unverified change cannot reach the SDK or `outputs/`; a false report is rejected live.
+
+**Scale** (`results/`):
+| tier | runs | concurrency | throughput | latency p50/p95 | outcome |
+|---|---|---|---|---|---|
+| infra: scripted policy, full tools/guards/trace/oracle/eval | 1000 synthetic parts | 6 procs | 606 runs/min | 0.6 / 1.5 s | 0 crashes, 0 oracle failures, 1000/1000 statuses = ground truth; eval of 1000 traces (30 MB) incl. ground truth: 159 s |
+| real `claude -p` agents | 30 synthetic parts | 10 | 27 runs/min | 20 / 30 s | 30/30 eval PASS, 0 rate-limited, $1.00 API-equiv, 5h window 44%→53% |
+
+What scales: harness, traces and eval are embarrassingly parallel (isolated workdir per run, append-only JSONL,
+per-part ground truth in a process pool). The binding constraint for hundreds of real agents is the LLM quota
+(~0.3% of a 5-hour subscription window per run → ~300 runs per window), not the harness; beyond that, use an
+API key with rate-limit backoff, or a queue spreading runs over windows.
+
+**Supervision:** three independent supervisor-agent audits (code; eval + traces; if/else + hard-coding).
+No cheating found; all findings fixed (reduced-load "fixes", part swapping, gameable honest-failure rule,
+constraints lost in the foreign adapter, real part values in prompt examples, duplicated constants,
+if/elif chains replaced by tables in `agent/workflow.py` and `eval/narrate.py`).
 
 ## Layout
-`agent/` CLI client · tool layer (guards, shaping, budgets) · MCP server · prompt · trace · memory · run harness
-`checks/` non-happy checks · oracle (`verify_output`) · brute-force `ground_truth` · `stress`
-`eval/` canonical schema · adapters (our harness, bare Claude Code stream-json) · `config.toml` thresholds ·
-checks · report · `flawed` · `learn` (eval findings → lessons) · `export_langfuse`
-`traces/<run_id>/harness.jsonl` (tool-level ground truth) + `llm.stream.jsonl` (raw Claude Code stream)
+`agent/` CLI client · tool layer (guards, shaping, budgets) · `workflow.py` (single workflow table) · MCP
+server · prompt · trace · memory · run harness
+`checks/` non-happy checks · oracle · ground truth · hard-coding scan · stress · scripted agent · scale · bad agents
+`eval/` canonical schema · adapters (our harness, bare Claude Code stream-json) · `config.toml` · checks ·
+report · `narrate` (per-call timelines) · `flawed` · `learn` · `export_langfuse`
 
 ## Known limitations / unfinished
-- **Main limitation:** fix is not minimised — the agent stops at the first verified value (e.g. 4 mm), it does
-  not search for the smallest passing change; the task does not require it.
-- Lesson dedup is exact-text only, so paraphrased observations accumulate (see `memory/lessons.jsonl`).
-- Ground truth is a 9-point grid per parameter within bounds (0.25x–4x when unconstrained); a narrow feasible
-  window between grid points could be missed.
-- Agent loop is owned by `claude -p`, so budgets are enforced in the tool server, not by stopping the loop.
+- **Main limitation:** the fix is not minimised — the agent stops at the first verified value (4 mm).
+- Only two trace adapters exist; a Bash-only or OpenAI-SDK harness needs one more adapter (~40 lines).
+- Eval thresholds are reasoned defaults, not calibrated against a labeled trace set.
+- Memory: no file lock (unsafe for parallel `--memory on` runs), memory tools still offered when memory is off,
+  exact-text lesson dedup only.
+- Hard-coding scan catches identifiers, not prose (e.g. "thickness"); supervisor review covers prose.
 
 ## Optional: Langfuse viewer
 Local stack in `~/dev/langfuse-local` (ports bound to 127.0.0.1, random secrets in `.env`, AI-gateway service
-removed for Compose 2.5 compatibility). Then:
-`LANGFUSE_PUBLIC_KEY=… LANGFUSE_SECRET_KEY=… .venv/bin/python -m eval.export_langfuse traces/ eval/flawed/ --report eval/out/report.json --report eval/out_flawed/report.json`
-(Langfuse v4: runs sent as OTLP/JSON to `/api/public/otel/v1/traces`, checks to `/api/public/scores`; one trace
-per run, one span per tool call, every eval check as a score; ids derived from trace dir → re-export is idempotent).
+removed for Compose 2.5). Export (Langfuse v4: OTLP traces + score API; idempotent):
+`LANGFUSE_PUBLIC_KEY=… LANGFUSE_SECRET_KEY=… .venv/bin/python -m eval.export_langfuse traces/ eval/flawed/ eval/bad_traces/ --report eval/out/report.json --report eval/out_flawed/report.json --report eval/out_bad/report.json`
