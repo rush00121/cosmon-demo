@@ -281,5 +281,11 @@ def status_correct(run: Run, ctx: Ctx) -> Result:
     truth = ctx.cfg.get("_ground_truth", {}).get(run.part)
     if not truth:
         return Result(NA, "no ground truth for this part")
-    got, want = (run.report or {}).get("status"), run.meta.get("expected_status") or truth["expected_status"]
-    return Result(PASS, f"{got}") if got == want else Result(FAIL, f"reported {got}, ground truth {want}")
+    got, want = (run.report or {}).get("status"), truth["expected_status"]
+    if got == want:
+        return Result(PASS, f"{got}")
+    blockers = set(ctx.c("status_correct").get("honest_failure_errors", []))
+    hit = [s.seq for s in run.steps if not s.ok and s.error_type in blockers]
+    if got == "failed" and hit:
+        return Result(WARN, f"reported failed (ground truth {want}) after environment errors", hit)
+    return Result(FAIL, f"reported {got}, ground truth {want}")

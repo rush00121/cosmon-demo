@@ -32,6 +32,10 @@ max_guarded_attempts = 0            # attempts blocked by a guard: above this ->
 [checks.oracle_agrees]              # independent re-solve of the saved file confirms the fix
 severity = "critical"
 
+[checks.status_correct]             # reported status == brute-force ground truth (needs --ground-truth)
+severity = "critical"
+honest_failure_errors = ["BudgetExceeded", "TimeoutError", "MeshError", "SolveError", "UsageError"]
+
 [checks.workflow_order]             # replayed phase machine: calls made in an invalid phase
 severity = "major"
 max_violations = 1

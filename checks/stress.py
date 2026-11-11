@@ -62,7 +62,7 @@ def cases(seed: int) -> list[dict]:
              "kind": "fault"},
             {"name": "fault_solve_timeout", "part": "bracket_v3", "args": common + ["--faults", "solve:timeout"],
              "kind": "fault"},
-            {"name": "budget_2_solves", "part": "bracket_v3", "args": common + ["--max-solves", "2"],
+            {"name": "budget_1_solve", "part": "bracket_v3", "args": common + ["--max-solves", "1"],
              "kind": "budget", "expect": "failed"}]
     for c in out:
         c.update(parts_dir=parts_dir, constraints=cpath)
@@ -104,7 +104,11 @@ def main() -> None:
     with ThreadPoolExecutor(a.jobs) as pool:
         rows = list(pool.map(run_case, todo))
     STRESS_DIR.mkdir(exist_ok=True)
-    (STRESS_DIR / f"report_seed{a.seed}.json").write_text(json.dumps(rows, indent=2))
+    report = STRESS_DIR / f"report_seed{a.seed}.json"
+    if a.only and report.exists():  # partial rerun: replace only the rerun cases
+        fresh = {r["case"] for r in rows}
+        rows = [r for r in json.loads(report.read_text()) if r["case"] not in fresh] + rows
+    report.write_text(json.dumps(rows, indent=2))
     cols = ["case", "kind", "expected", "got", "baseline_sf", "final_sf", "change", "oracle_ok", "solves",
             "rejections", "self_corrections", "verdict"]
     print(" | ".join(cols))

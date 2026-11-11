@@ -290,7 +290,8 @@ class PartLabTools:
     def _t_recall_lessons(self) -> ToolOutcome:
         if not self.lessons:
             return ToolOutcome(ok({"lessons": [], "note": "memory disabled for this run"}), "harness")
-        scopes = [f"part:{self.part}"] if self.part else []
+        part = self.part or self.assigned_part   # agents usually recall before open_part
+        scopes = [f"part:{part}"] if part else []
         return ToolOutcome(ok({"lessons": self.lessons.recall(scopes)}), "harness")
 
     def _t_record_lessons(self, lessons: list[dict]) -> ToolOutcome:

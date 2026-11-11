@@ -1,0 +1,13 @@
+case | kind | expected | got | baseline_sf | final_sf | change | oracle_ok | solves | rejections | self_corrections | verdict
+housing_v1 | unnamed_real | no_change_needed | no_change_needed | 8.182 | 8.182 |  | None | 1 | 0 | 0 | PASS
+bracket_v3_thick | unnamed_real | no_change_needed | no_change_needed | 3.072 | 3.072 |  | None | 1 | 0 | 0 | PASS
+bracket_v1 | unnamed_real | fixed | fixed | 1.107 | 2.241 | thickness_mm=4 | True | 4 | 0 | 0 | PASS
+synth7_0 | synthetic | no_fix_possible | no_fix_possible | 1.032 | 1.032 |  | None | 4 | 0 | 0 | PASS
+synth7_1 | synthetic | fixed | fixed | 1.008 | 2.052 | thickness_mm=4 | True | 3 | 0 | 0 | PASS
+synth7_2 | synthetic | fixed | fixed | 0.682 | 2.079 | thickness_mm=7 | True | 3 | 0 | 0 | PASS
+synth7_3 | synthetic | fixed | fixed | 1.239 | 2.058 | thickness_mm=4.6 | True | 4 | 0 | 0 | PASS
+fault_mesh_fail | fault | fixed | fixed | 1.428 | 2.198 | thickness_mm=4 | True | 3 | 0 | 0 | PASS
+fault_solve_timeout | fault | fixed | fixed | 1.428 | 2.198 | thickness_mm=4 | True | 3 | 0 | 0 | PASS
+budget_2_solves | budget | failed | fixed | 1.428 | 2.198 | thickness_mm=4 | True | 2 | 0 | 0 | FAIL
+
+9/10 PASS
