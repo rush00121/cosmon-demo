@@ -21,6 +21,11 @@ def canonical_tool(name: str) -> str:
     return name.replace("-", "_")
 
 
+def _args(raw: dict | None) -> dict:
+    """Tool arguments without the stated intent (kept separately in Step.why)."""
+    return {k: v for k, v in (raw or {}).items() if k != "why"}
+
+
 def _read_jsonl(path: Path) -> list[dict]:
     return [json.loads(l) for l in Path(path).read_text().splitlines() if l.strip()]
 
@@ -38,7 +43,7 @@ def partlab_harness(path: Path) -> Run:
             c = calls.get(e["call_seq"], {})
             shaped = e.get("shaped") or {}
             result = shaped.get("result") if shaped.get("ok") else shaped
-            steps.append(Step(seq=e["call_seq"], tool=e["tool"], args=c.get("args", {}), ok=bool(e.get("ok")),
+            steps.append(Step(seq=e["call_seq"], tool=e["tool"], args=_args(c.get("args")), why=(c.get("args") or {}).get("why"), ok=bool(e.get("ok")),
                               error_type=e.get("error_type"), source=e.get("source"), result=result,
                               result_bytes=e.get("shaped_bytes", 0), raw_bytes=e.get("raw_bytes"),
                               state_after=e.get("state_after"),
@@ -76,7 +81,7 @@ def claude_stream(path: Path) -> Run:
                     shaped = {"ok": False, "error_type": "Unparseable", "error": text[:200]}
                 tool, ok = canonical_tool(use["name"]), bool(shaped.get("ok")) and not b.get("is_error")
                 result = shaped.get("result") if ok else shaped
-                steps.append(Step(seq=len(steps) + 1, tool=tool, args=use.get("input") or {}, ok=ok,
+                steps.append(Step(seq=len(steps) + 1, tool=tool, args=_args(use.get("input")), why=(use.get("input") or {}).get("why"), ok=ok,
                                   error_type=shaped.get("error_type"), result=result, result_bytes=len(text),
                                   obs=observe(tool, ok, result)))
                 if tool == "report_result":

@@ -25,6 +25,7 @@ class Step:
     obs: dict = field(default_factory=dict)
     ts: float | None = None        # call start (epoch seconds), if known
     duration_ms: int | None = None
+    why: str | None = None         # intent stated by the agent with the call, if the harness asked for one
 
 
 @dataclass

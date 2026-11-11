@@ -93,7 +93,9 @@ def markdown(rows: list[dict], agg: dict) -> str:
          "| run | part | status | verdict | score | failed / issues |", "|---|---|---|---|---|---|"]
     for r in sorted(rows, key=lambda r: (r["verdict"] != "FAIL", r["score"] or 0)):
         issues = ", ".join(f"**{i}**" if i in r["failed"] else i for i in r["issues"]) or "—"
-        L.append(f"| `{r['run_id']}` | {r['part']} | {r['status']} | {r['verdict']} | {r['score']} | {issues} |")
+        page = Path(r["meta"]["trace_path"] or r["run_id"]).parent.name
+        L.append(f"| [`{r['run_id']}`](runs/{page}.md) | {r['part']} | {r['status']} | {r['verdict']} | "
+                 f"{r['score']} | {issues} |")
     L += ["", "## Check pass rates", "", "| check | pass | warn | fail | n/a |", "|---|---|---|---|---|"]
     for name, c in agg["per_check"].items():
         L.append(f"| {name} | {c.get('pass', 0)} | {c.get('warn', 0)} | {c.get('fail', 0)} | {c.get('na', 0)} |")
@@ -135,6 +137,8 @@ def main(argv=None) -> int:
     a.out.mkdir(parents=True, exist_ok=True)
     (a.out / "report.json").write_text(json.dumps({"summary": agg, "runs": rows}, indent=2))
     (a.out / "report.md").write_text(markdown(rows, agg))
+    from .narrate import write_timelines
+    write_timelines(list(zip(runs, rows)), a.out / "runs")   # one readable timeline per run
     print(markdown(rows, agg))
     return 1 if agg["verdicts"]["FAIL"] else 0
 

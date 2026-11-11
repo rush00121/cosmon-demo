@@ -36,7 +36,9 @@ SEARCH METHOD (keeps solves low)
 6. Finally call record_lessons with at most 3 short, reusable lessons (process lessons with scope 'global',
    observations about this part with scope 'part:<name>').
 
-Be terse. Do not narrate between tool calls.""".format(lo=SENSIBLE_RANGE[0], hi=int(SENSIBLE_RANGE[1]))
+Every tool call takes a `why` argument: at most 15 words stating the intent of that call (what you expect to
+learn or achieve), e.g. "re-mesh after thickness change", "probe hole diameter at M4 minimum". Be terse.
+Do not narrate between tool calls.""".format(lo=SENSIBLE_RANGE[0], hi=int(SENSIBLE_RANGE[1]))
 
 
 def user_prompt(part: str) -> str:

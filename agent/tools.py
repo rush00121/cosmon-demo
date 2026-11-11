@@ -115,6 +115,14 @@ SCHEMAS: dict[str, dict] = {
 }
 TERMINAL = {"report_result", "record_lessons"}
 
+# Every tool takes a short stated intent. It is recorded in the trace (engineers see *why* each call was made)
+# and stripped before dispatch, so it never reaches the CLI or changes behavior.
+WHY = {"type": "string", "maxLength": 120,
+       "description": "<=15 words: why you are making this call, e.g. 'probe thickness at max 5.0 to test feasibility'"}
+for _schema in SCHEMAS.values():
+    _schema["properties"] = {"why": WHY, **_schema["properties"]}
+    _schema["required"] = ["why", *_schema.get("required", [])]
+
 
 class PartLabTools:
     def __init__(self, lab: PartLab, constraints: Constraints, outputs_dir: Path = ROOT / "outputs",
@@ -147,7 +155,7 @@ class PartLabTools:
 
     # ---- dispatch -------------------------------------------------------------------------------
     def call(self, name: str, args: dict | None = None) -> ToolOutcome:
-        args = args or {}
+        args = {k: v for k, v in (args or {}).items() if k != "why"}
         if name not in SCHEMAS:
             return ToolOutcome(err("InvalidArgumentError", f"unknown tool {name}"), "harness")
         if name not in TERMINAL:
